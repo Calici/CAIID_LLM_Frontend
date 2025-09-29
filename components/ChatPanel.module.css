@@ -1,0 +1,15 @@
+/* ChatPanel.module.css */
+.chatMd :global(pre code.hljs) {
+  display: block;
+  overflow-x: auto;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: #0d1117;
+  color: #c9d1d9;
+}
+
+/* 필요한 토큰들만 최소화해서 */
+.chatMd :global(.hljs-keyword) { color: #ff7b72; }
+.chatMd :global(.hljs-string)  { color: #a5d6ff; }
+.chatMd :global(.hljs-number)  { color: #79c0ff; }
+.chatMd :global(.hljs-comment) { color: #8b949e; }

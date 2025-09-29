@@ -1,3 +1,5 @@
+"use client";
+
 import { Link } from "@heroui/link";
 import { Snippet } from "@heroui/snippet";
 import { Code } from "@heroui/code";
@@ -7,50 +9,66 @@ import { siteConfig } from "@/config/site";
 import { title, subtitle } from "@/components/primitives";
 import { GithubIcon } from "@/components/icons";
 
-export default function Home() {
+import Sidebar from "@/components/Sidebar";
+import ChatPanel from "@/components/ChatPanel";
+import FilesPanel from "@/components/FilesPanel";
+import { useState } from "react";
+import MarkdownTest from '@/components/MarkdownTest'
+
+export default function Page() {
+  const [leftOpen, setLeftOpen] = useState(true); // 왼쪽 사이드바 열림/닫힘
+  const [rightOpen, setRightOpen] = useState(true); // 오른쪽 파일 패널 열림/닫힘
+
+  const gridCols =
+    leftOpen && rightOpen
+      ? "lg:grid-cols-[260px_1fr_320px]"
+      : leftOpen && !rightOpen
+        ? "lg:grid-cols-[260px_1fr_0px]"
+        : !leftOpen && rightOpen
+          ? "lg:grid-cols-[0px_1fr_320px]"
+          : "lg:grid-cols-[0px_1fr_0px]";
+
   return (
-    <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
-      <div className="inline-block max-w-xl text-center justify-center">
-        <span className={title()}>Make&nbsp;</span>
-        <span className={title({ color: "violet" })}>beautiful&nbsp;</span>
-        <br />
-        <span className={title()}>
-          websites regardless of your design experience.
-        </span>
-        <div className={subtitle({ class: "mt-4" })}>
-          Beautiful, fast and modern React UI library.
-        </div>
-      </div>
+    <main className="h-[100dvh] w-full overflow-hidden">
+      {/* 3-열 레이아웃: 좌 260px, 중간 1fr, 우 320px (토글 시 0px로 축소) */}
+      <div
+        className={`grid h-full grid-rows-[auto_1fr] lg:grid-rows-1 ${gridCols}`}
+      >
+        {/* 모바일 상단 바 */}
+        <header className="flex items-center gap-2 px-4 py-3 border-b lg:hidden">
+          <h1 className="text-base font-semibold">Chat Workspace</h1>
+        </header>
 
-      <div className="flex gap-3">
-        <Link
-          isExternal
-          className={buttonStyles({
-            color: "primary",
-            radius: "full",
-            variant: "shadow",
-          })}
-          href={siteConfig.links.docs}
+        {/* 왼쪽 사이드바 */}
+        <aside
+          className={`hidden border-r lg:block transition-[opacity] duration-200 ${
+            leftOpen ? "" : "opacity-0 pointer-events-none"
+          }`}
+          aria-hidden={!leftOpen}
         >
-          Documentation
-        </Link>
-        <Link
-          isExternal
-          className={buttonStyles({ variant: "bordered", radius: "full" })}
-          href={siteConfig.links.github}
-        >
-          <GithubIcon size={20} />
-          GitHub
-        </Link>
-      </div>
+          {/* Sidebar에 collapsed/onToggle 전달 */}
+          <Sidebar
+            collapsed={!leftOpen}
+            onToggle={() => setLeftOpen((v) => !v)}
+          />
+        </aside>
 
-      <div className="mt-8">
-        <Snippet hideCopyButton hideSymbol variant="bordered">
-          <span>
-            Get started by editing <Code color="primary">app/page.tsx</Code>
-          </span>
-        </Snippet>
+        {/* 가운데 채팅 패널 */}
+        <section className="min-w-0">
+          <ChatPanel />
+        </section>
+
+        {/* 오른쪽 파일 패널 (원하시면 동일한 방식으로 토글) */}
+        <aside
+          className={`hidden border-l lg:block transition-[opacity] duration-200 ${
+            rightOpen ? "" : "opacity-0 pointer-events-none"
+          }`}
+          aria-hidden={!rightOpen}
+        >
+          <FilesPanel /* collapsed={!rightOpen} onToggle={()=>setRightOpen(v=>!v)} */
+          />
+        </aside>
       </div>
-    </section>
+    </main>
   );
 }
