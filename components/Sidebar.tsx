@@ -8,7 +8,16 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronDown,
   faChevronRight,
+  faGear,
 } from "@fortawesome/free-solid-svg-icons";
+
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 
 const MOCK_TOPICS = [
   "Lorum ipsum dolor",
@@ -28,9 +37,10 @@ type SidebarProps = {
   onToggle?: () => void; // 부모의 leftOpen 토글
 };
 
-export default function Sidebar({collapsed = false, onToggle }: SidebarProps) {
+export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const [filter, setFilter] = useState("");
   const [topicsOpen, setTopicsOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const filtered = MOCK_TOPICS.filter((t) =>
     t.toLowerCase().includes(filter.toLowerCase())
   );
@@ -89,11 +99,47 @@ export default function Sidebar({collapsed = false, onToggle }: SidebarProps) {
         </ul>
       </div>
 
-      <div className="p-3 border-t">
-        <p className="text-xs text-default-500">
-          Tip Add or select a topic to group your chats
-        </p>
+      <div className="p-0 border-t">
+        <Button
+          variant="light"
+          radius="none"
+          className="w-full h-12 justify-start"
+          onPress={() => {
+            setOpen(true);
+          }}
+          aria-label="Open Settings"
+        >
+          <span className="flex items-center gap-2">
+            <FontAwesomeIcon icon={faGear} size="lg" />
+          </span>
+          <span className="text-lg text-default-800">Settings</span>
+        </Button>
       </div>
+
+      <Modal isOpen={open} onOpenChange={setOpen} placement="center">
+        <ModalContent>
+          {(
+            onClose // ← Heroui의 render-prop 패턴
+          ) => (
+            <>
+              <ModalHeader className="text-sm">Settings</ModalHeader>
+              <ModalBody>
+                <p className="text-sm">Hello world</p>
+                {/* 이후에 OpenAI API Key 입력 필드가 들어올 자리 */}
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  Close
+                </Button>
+                <Button color="primary" onPress={onClose}>
+                  OK
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+      
     </div>
   );
 }
