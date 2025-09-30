@@ -1,16 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronDown,
   faChevronRight,
   faGear,
 } from "@fortawesome/free-solid-svg-icons";
-
 import {
   Modal,
   ModalContent,
@@ -30,7 +28,9 @@ const MOCK_TOPICS = [
   "Quis nostrud exercitation",
   "Ullamco laboris nisi",
   "Ut aliquip ex ea",
-];
+]; // Random list for Project list showup
+
+const LS_KEY_OPENAI = "openai_api_key"; // OpenAI API KEY
 
 type SidebarProps = {
   collapsed?: boolean;
@@ -38,9 +38,56 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
+  const [open, setOpen] = useState(false); // Modal open/close
+  const [apiKey, setApiKey] = useState(""); // Input value
+  const [error, setError] = useState(""); // Validation Message
+  const [saved, setSaved] = useState(false); // show saved Feedback
   const [filter, setFilter] = useState("");
   const [topicsOpen, setTopicsOpen] = useState(true);
-  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    // SSR 보호: window가 없을 수 있으니 가드
+    if (typeof window === "undefined") return;
+    const existing = localStorage.getItem(LS_KEY_OPENAI);
+    if (existing) setApiKey(existing);
+  }, []);
+
+  const handleSave = () => {
+    const k = apiKey.trim();
+
+    // 1) 간단 검증
+    if (!k) {
+      setError("Please enter your OpenAI API key.");
+      setSaved(false);
+      return;
+    }
+    if (!k.startsWith("sk-")) {
+      setError("The key should start with 'sk-'.");
+      setSaved(false);
+      return;
+    }
+
+    // 2) 저장
+    try {
+      localStorage.setItem(LS_KEY_OPENAI, k);
+      setError("");
+      setSaved(true);
+
+      // 3) 잠시 후 'Saved' 배지 숨기기 (선택)
+      setTimeout(() => setSaved(false), 1500);
+    } catch (e) {
+      setError("Failed to save the key. Check your browser settings.");
+      setSaved(false);
+    }
+  };
+
+  const handleClear = () => {
+    localStorage.removeItem(LS_KEY_OPENAI);
+    setApiKey("");
+    setError("");
+    setSaved(false);
+  };
+
   const filtered = MOCK_TOPICS.filter((t) =>
     t.toLowerCase().includes(filter.toLowerCase())
   );
@@ -116,6 +163,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         </Button>
       </div>
 
+      {/* Settings Modal Here */}
       <Modal isOpen={open} onOpenChange={setOpen} placement="center">
         <ModalContent>
           {(
@@ -124,22 +172,38 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             <>
               <ModalHeader className="text-sm">Settings</ModalHeader>
               <ModalBody>
-                <p className="text-sm">Hello world</p>
-                {/* 이후에 OpenAI API Key 입력 필드가 들어올 자리 */}
+                <p className="text-sm">This modal handles Settings for the system.</p>
+                <Input
+                  label="OpenAI API Key"
+                  placeholder="sk-**************************"
+                  variant="bordered"
+                  value={apiKey}
+                  onValueChange={(val) => {
+                    setApiKey(val);
+                    if (error) setError("");
+                  }}
+                  isInvalid={!!error}
+                  errorMessage={error || undefined}
+                  isRequired
+                  description="Your key stays on this device."
+                />
+                {saved && <p className="text-xs text-success">Saved ✓</p>}
               </ModalBody>
               <ModalFooter>
-                <Button variant="light" onPress={onClose}>
+                <Button color='warning' onPress={handleClear}>
+                  Clear
+                </Button>
+                <Button color="danger" onPress={onClose}>
                   Close
                 </Button>
-                <Button color="primary" onPress={onClose}>
-                  OK
+                <Button color="primary" onPress={handleSave}>
+                  Save
                 </Button>
               </ModalFooter>
             </>
           )}
         </ModalContent>
       </Modal>
-      
     </div>
   );
 }
