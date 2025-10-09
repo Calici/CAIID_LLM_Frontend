@@ -8,7 +8,10 @@ import {
   faChevronDown,
   faChevronRight,
   faGear,
+  faEye,
+  faEyeSlash,
 } from "@fortawesome/free-solid-svg-icons";
+
 import {
   Modal,
   ModalContent,
@@ -44,6 +47,24 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const [saved, setSaved] = useState(false); // show saved Feedback
   const [filter, setFilter] = useState("");
   const [topicsOpen, setTopicsOpen] = useState(true);
+  const [showKey, setShowKey] = useState(false); // Bool For OpenAI Key Show or not
+
+  const [toast, setToast] = useState<{
+    type: "success" | "error";
+    msg: string;
+  } | null>(null);
+
+  const showToast = (type: "success" | "error", msg: string, ms = 1500) => {
+    setToast({ type, msg });
+    window.setTimeout(() => setToast(null), ms);
+  };
+
+  const errMsg = (e: unknown) =>
+    e instanceof Error
+      ? e.message
+      : typeof e === "string"
+        ? e
+        : "Unknown error";
 
   useEffect(() => {
     // SSR 보호: window가 없을 수 있으니 가드
@@ -72,12 +93,18 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       localStorage.setItem(LS_KEY_OPENAI, k);
       setError("");
       setSaved(true);
-
+      showToast("success", "Saved API Key Successfully..");
+      window.setTimeout(() => {
+        setSaved(false);
+        setOpen(false);
+      }, 400);
       // 3) 잠시 후 'Saved' 배지 숨기기 (선택)
       setTimeout(() => setSaved(false), 1500);
     } catch (e) {
-      setError("Failed to save the key. Check your browser settings.");
+      const msg = errMsg(e);
+      setError(`Failed to save the key. Check your browser settings. : ${msg}`);
       setSaved(false);
+      showToast("error", `failed to save : ${msg}`);
     }
   };
 
@@ -172,11 +199,14 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             <>
               <ModalHeader className="text-sm">Settings</ModalHeader>
               <ModalBody>
-                <p className="text-sm">This modal handles Settings for the system.</p>
+                <p className="text-sm">
+                  This modal handles Settings for the system.
+                </p>
                 <Input
                   label="OpenAI API Key"
                   placeholder="sk-**************************"
                   variant="bordered"
+                  type={showKey ? "text" : "password"}
                   value={apiKey}
                   onValueChange={(val) => {
                     setApiKey(val);
@@ -186,14 +216,31 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                   errorMessage={error || undefined}
                   isRequired
                   description="Your key stays on this device."
+                  endContent={
+                    <Button
+                      isIconOnly
+                      variant="light"
+                      size="sm"
+                      radius="full"
+                      aria-label={showKey ? "Hide API key" : "Show API key"}
+                      onPress={() => setShowKey((v) => !v)}
+                      onMouseDown={(e) => e.preventDefault()} // prevents input losing focus when clicking Eye button
+                      className="min-w-0"
+                    >
+                      <FontAwesomeIcon
+                        icon={showKey ? faEyeSlash : faEye}
+                        className="text-default-500"
+                      />
+                    </Button>
+                  }
                 />
                 {saved && <p className="text-xs text-success">Saved ✓</p>}
               </ModalBody>
               <ModalFooter>
-                <Button color='warning' onPress={handleClear}>
+                <Button color="danger" onPress={handleClear}>
                   Clear
                 </Button>
-                <Button color="danger" onPress={onClose}>
+                <Button color="default" onPress={onClose}>
                   Close
                 </Button>
                 <Button color="primary" onPress={handleSave}>
@@ -204,6 +251,21 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           )}
         </ModalContent>
       </Modal>
+      {/* Toast (position: fixed) */}
+      {toast && (
+        <div className="pointer-events-none fixed top-4 right-4 z-50">
+          <div
+            className={[
+              "rounded-md px-3 py-2 shadow-lg text-sm transition-opacity",
+              toast.type === "success"
+                ? "bg-success-100 text-success-800"
+                : "bg-danger-100 text-danger-800",
+            ].join(" ")}
+          >
+            {toast.msg}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
