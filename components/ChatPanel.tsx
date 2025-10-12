@@ -4,13 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@heroui/button";
 import { Textarea } from "@heroui/input";
 import { Card } from "@heroui/card";
-import MarkdownTest3 from "./MarkdownTest3";
-
-import "highlight.js/styles/github.css";
-
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github.css";
 
 /** ✅ 백엔드 스키마 그대로 사용 */
 type Msg = { role: "user" | "ai" | "sys"; msg: string };
@@ -18,12 +15,11 @@ type Msg = { role: "user" | "ai" | "sys"; msg: string };
 export default function ChatPanel() {
   const [messages, setMessages] = useState<Msg[]>([
     { role: "sys", msg: "System initialized. Messages may be logged for QA." },
-    {
-      role: "ai",
-      msg: "Hello! Ask me anything about your files or literature.",
-    },
+    { role: "ai", msg: "Hello! Ask me anything about your files or literature." },
   ]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,28 +29,109 @@ export default function ChatPanel() {
     });
   }, [messages.length]);
 
-  const send = () => {
+  const send = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || loading) return;
 
-    // 1) 사용자 메시지 추가
-    const nextUser: Msg = { role: "user", msg: text };
-    setMessages((prev) => [...prev, nextUser]);
+    // 1) 사용자 메시지 + AI placeholder 추가
+    const userMsg: Msg = { role: "user", msg: text };
+    setMessages((prev) => [...prev, userMsg, { role: "ai", msg: "" }]);
     setInput("");
+    setLoading(true);
 
-    // 2) (데모) 어시스턴트 목업 응답
-    setTimeout(() => {
-      const mockAssistant: Msg = {
-        role: "ai",
-        msg: `You said "${text}". This is a placeholder response.`,
-      };
-      setMessages((prev) => [...prev, mockAssistant]);
-    }, 300);
+    // 2) API 키 확인 (개발용: localStorage에서 가져와 헤더로 전달)
+    const apiKey =
+      typeof window !== "undefined" ? localStorage.getItem("openai_api_key") : null;
 
-    // ⚠️ 실제 연동 시: messages에 nextUser를 합쳐서 그대로 API로 보내면 됩니다.
-    // fetch("/api/chat", { method: "POST", body: JSON.stringify([...messages, nextUser]) })
-    //   .then(res => res.json())
-    //   .then((data: Msg[]) => setMessages(data));
+    if (!apiKey) {
+      // 마지막 AI 메시지를 키 경고로 치환
+      setMessages((prev) => {
+        const next = [...prev];
+        const last = next.length - 1;
+        if (last >= 0 && next[last].role === "ai") {
+          next[last] = {
+            role: "ai",
+            msg: "⚠️ Missing API key. Open Settings and save your OpenAI key.",
+          };
+        }
+        return next;
+      });
+      setLoading(false);
+      return;
+    }
+
+    // 3) 서버 라우트로 스트리밍 요청
+    try {
+      const payload = { messages: [...messages, userMsg] /* model/baseUrl 옵션 필요 시 추가 */ };
+
+      const resp = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-openai-key": apiKey, // 운영에선 제거하고 서버 ENV 사용 권장
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!resp.ok || !resp.body) {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let aiText = "";
+
+      // 4) SSE 스트림 파싱 → delta.content 이어붙이기
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+
+        for (const line of lines) {
+          if (!line.startsWith("data:")) continue;
+          const data = line.slice(5).trim();
+          if (data === "[DONE]") continue;
+          try {
+            const json = JSON.parse(data);
+            const delta = json.choices?.[0]?.delta?.content ?? "";
+            if (delta) {
+              aiText += delta;
+              // 마지막 AI 메시지 업데이트
+              setMessages((prev) => {
+                const next = [...prev];
+                const last = next.length - 1;
+                if (last >= 0 && next[last].role === "ai") {
+                  next[last] = { role: "ai", msg: aiText };
+                }
+                return next;
+              });
+            }
+          } catch {
+            // keep-alive 등 비JSON 라인은 무시
+          }
+        }
+      }
+    } catch (err: any) {
+      setMessages((prev) => {
+        const next = [...prev];
+        const last = next.length - 1;
+        if (last >= 0 && next[last].role === "ai") {
+          next[last] = {
+            role: "ai",
+            msg: `❌ Request failed: ${err?.message ?? "unknown error"}`,
+          };
+        }
+        return next;
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const roleLabel = (role: Msg["role"]) =>
@@ -66,11 +143,11 @@ export default function ChatPanel() {
       <div className="hidden items-center justify-between border-b px-4 py-3 lg:flex">
         <div className="min-w-0">
           <h2 className="truncate text-sm font-semibold">Chat history</h2>
-          {/*<MarkdownTest3 />*/}
           <p className="truncate text-xs text-default-500">
             Messages are stored locally during development
           </p>
         </div>
+        <div className="text-xs text-default-500">{loading ? "Streaming..." : ""}</div>
       </div>
 
       {/* 채팅 히스토리 영역 */}
@@ -81,25 +158,17 @@ export default function ChatPanel() {
               m.role === "user"
                 ? "bg-content2"
                 : m.role === "ai"
-                  ? "bg-content1"
-                  : "bg-default-50 border border-dashed";
+                ? "bg-content1"
+                : "bg-default-50 border border-dashed";
             return (
-              <Card
-                key={i}
-                className={`px-3 py-2 ${cls}`}
-                shadow="none"
-                radius="sm"
-              >
+              <Card key={i} className={`px-3 py-2 ${cls}`} shadow="none" radius="sm">
                 <div className="text-xs mb-1 font-medium text-default-500">
                   {roleLabel(m.role)}
                 </div>
                 {m.role === "ai" ? (
                   // LLM 응답에만 Markdown 적용
                   <div className="prose prose-sm max-w-none prose-pre:overflow-x-auto">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]} // GFM: ~~취소선~~, 표, 체크박스, 자동 링크 등
-                      rehypePlugins={[rehypeHighlight]} // 코드블록 하이라이트
-                    >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
                       {m.msg}
                     </ReactMarkdown>
                   </div>
@@ -129,11 +198,11 @@ export default function ChatPanel() {
                 e.preventDefault(); // 줄바꿈 방지
                 send();
               }
-              // Shift+Enter → 기본 줄바꿈
             }}
+            isDisabled={loading}
           />
-          <Button color="primary" onPress={send}>
-            Send
+          <Button color="primary" onPress={send} isDisabled={loading}>
+            {loading ? "Sending..." : "Send"}
           </Button>
         </div>
       </div>
