@@ -55,6 +55,7 @@
     "@react-aria/ssr": "3.9.10",
     "@react-aria/visually-hidden": "3.8.27",
     "@tailwindcss/typography": "^0.5.19",
+    "axios": "^1.12.2",
     "clsx": "2.1.1",
     "framer-motion": "11.18.2",
     "highlight.js": "^11.11.1",

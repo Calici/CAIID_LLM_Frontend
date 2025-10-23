@@ -11,9 +11,10 @@ import { GithubIcon } from "@/components/icons";
 
 import Sidebar from "@/components/Sidebar";
 import ChatPanel from "@/components/ChatPanel";
+import RightPane from "@/components/RightPane";
 import FilesPanel from "@/components/FilesPanel";
 import { useState } from "react";
-import MarkdownTest from '@/components/MarkdownTest'
+import MarkdownTest from "@/components/MarkdownTest";
 
 export default function Page() {
   const [leftOpen, setLeftOpen] = useState(true); // 왼쪽 사이드바 열림/닫힘
@@ -59,14 +60,8 @@ export default function Page() {
         </section>
 
         {/* 오른쪽 파일 패널 (원하시면 동일한 방식으로 토글) */}
-        <aside
-          className={`hidden border-l lg:block transition-[opacity] duration-200 ${
-            rightOpen ? "" : "opacity-0 pointer-events-none"
-          }`}
-          aria-hidden={!rightOpen}
-        >
-          <FilesPanel /* collapsed={!rightOpen} onToggle={()=>setRightOpen(v=>!v)} */
-          />
+        <aside className="hidden border-l lg:block">
+          <RightPane />
         </aside>
       </div>
     </main>
