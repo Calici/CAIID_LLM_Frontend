@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Switch } from "@heroui/switch";
@@ -30,68 +30,90 @@ const LS_KEY_OPENAI = "openai_api_key"; // OpenAI API KEY
 
 type SidebarProps = {
   collapsed?: boolean;
-  onToggle?: () => void; // parent toggles left pane, Not using now 
+  onToggle?: () => void; // parent toggles left pane, Not using now
 };
 
 export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
-  // ────────────────────────────────────────────────────────────────────────────
+  //──────────────────────────────────────────────────────────────────────────
   // UI state (settings & dialogs)
-  //────────────────────────────────────────────────────────────────────────────
-  const [open, setOpen] = useState(false); // Modal open/close
+  //──────────────────────────────────────────────────────────────────────────
+  const [settingsOpen, setSettingsOpen] = useState(false); // Modal open/close
+  const [createOpen, setCreateOpen] = useState(false); // "new topic" modal
+
+  // Settings form state
   const [apiKey, setApiKey] = useState(""); // Input value
-  const [error, setError] = useState(""); // Validation Message
-  const [saved, setSaved] = useState(false); // show saved Feedback
-  const [filter, setFilter] = useState("");
-  const [topicsOpen, setTopicsOpen] = useState(true);
   const [showKey, setShowKey] = useState(false); // Bool For OpenAI Key Show or not
+  const [errorMsg, setErrorMsg] = useState(""); // Validation Message
+  const [saved, setSaved] = useState(false); // show saved Feedback
+
+  // Search/filter state
+  const [filter, setFilter] = useState(""); // filter topics from this state
+  const [topicsOpen, setTopicsOpen] = useState(true); // flag for sidebar, not in use for now
+
+  // toast (top right side)
   const [toast, setToast] = useState<{
     type: "success" | "error";
     msg: string;
   } | null>(null);
-  const [workspaces, setWorkspaces] = useState<
-    { name: string; uuid: string }[]
-  >([]);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false); // checks if creating is in progress or not, prevents double creation
-  const [newOpen, setNewOpen] = useState(false); // newTopicModal open toggle
-  const [newName, setNewName] = useState(""); // Input for newTopicModal
+
+  // new topic modal input
+  const [draftName, setDraftName] = useState(""); // Input for newTopicModal
+
+  // Theme
   const { theme, resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false); // for dark mode toggle
+  const [isMounted, setIsMounted] = useState(false); // for dark mode toggle
 
-  useEffect(() => setMounted(true), []);
+  //──────────────────────────────────────────────────────────────────────────
+  // Data state (workspaces) + async flags
+  //──────────────────────────────────────────────────────────────────────────
+  const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
+  //{ name: string; uuid: string }
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false); // checks if creating is in progress or not, prevents double creation
+  const [loadErrorMsg, setLoadErrorMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    let alive = true;
-    setLoading(true); // start loading
-    setLoadError(null); // reset former error
-    listWorkspaces() // # API CALL
-      .then((data) => {
-        if (alive) setWorkspaces(data);
-      })
-      .catch((e) => {
-        if (alive) setLoadError(e instanceof Error ? e.message : String(e));
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
-    return () => {
-      alive = false;
-    };
-  }, []); //empty array means it will execute only on first render
+  const filtered = useMemo(
+    // Search topics feature
+    () =>
+      workspaces.filter((w) =>
+        w.name.toLowerCase().includes(filter.toLowerCase())
+      ),
+    [workspaces, filter]
+  );
 
+  //──────────────────────────────────────────────────────────────────────────
+  // Helpers
+  //──────────────────────────────────────────────────────────────────────────
   const showToast = (type: "success" | "error", msg: string, ms = 1500) => {
     setToast({ type, msg });
     window.setTimeout(() => setToast(null), ms);
-  };
+  }; // use it when need to display any toast
 
-  const errMsg = (e: unknown) =>
+  const getErrMsg = (e: unknown) =>
     e instanceof Error
       ? e.message
       : typeof e === "string"
         ? e
-        : "Unknown error";
+        : "Unknown error"; // Error message display
 
+  // Fetch list
+  const fetchWorkspaces = useCallback(async () => {
+    setIsLoading(true);
+    setLoadErrorMsg(null);
+    try {
+      const data = await listWorkspaces();
+      setWorkspaces(data);
+    } catch (e) {
+      setLoadErrorMsg(getErrMsg(e));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  //──────────────────────────────────────────────────────────────────────────
+  // Effects
+  //──────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => setIsMounted(true), []);
   useEffect(() => {
     // SSR 보호: window가 없을 수 있으니 가드
     if (typeof window === "undefined") return;
@@ -99,17 +121,31 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     if (existing) setApiKey(existing);
   }, []);
 
+  // Mount: initial workspace list
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      await fetchWorkspaces();
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [fetchWorkspaces]);
+
+  //──────────────────────────────────────────────────────────────────────────
+  // Handlers
+  //──────────────────────────────────────────────────────────────────────────
   const handleSave = () => {
     const k = apiKey.trim();
 
     // 1) 간단 검증
     if (!k) {
-      setError("Please enter your OpenAI API key.");
+      setErrorMsg("Please enter your OpenAI API key.");
       setSaved(false);
       return;
     }
     if (!k.startsWith("sk-")) {
-      setError("The key should start with 'sk-'.");
+      setErrorMsg("The key should start with 'sk-'.");
       setSaved(false);
       return;
     }
@@ -117,18 +153,20 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     // 2) 저장
     try {
       localStorage.setItem(LS_KEY_OPENAI, k);
-      setError("");
+      setErrorMsg("");
       setSaved(true);
       showToast("success", "Saved API Key Successfully..");
       window.setTimeout(() => {
         setSaved(false);
-        setOpen(false);
+        setSettingsOpen(false);
       }, 400);
       // 3) 잠시 후 'Saved' 배지 숨기기 (선택)
       setTimeout(() => setSaved(false), 1500);
     } catch (e) {
-      const msg = errMsg(e);
-      setError(`Failed to save the key. Check your browser settings. : ${msg}`);
+      const msg = getErrMsg(e);
+      setErrorMsg(
+        `Failed to save the key. Check your browser settings. : ${msg}`
+      );
       setSaved(false);
       showToast("error", `failed to save : ${msg}`);
     }
@@ -137,43 +175,27 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const handleClear = () => {
     localStorage.removeItem(LS_KEY_OPENAI);
     setApiKey("");
-    setError("");
+    setErrorMsg("");
     setSaved(false);
   };
 
-  const filtered = workspaces.filter((w) =>
-    w.name.toLowerCase().includes(filter.toLowerCase())
-  );
-
-  const onClickNew = async () => {
-    // New topic 클릭 시 createWorkSpace API invoke
-    // 0) 이미 로딩 중이면 중복 방지
-    if (creating || loading) return;
-
-    setCreating(true);
-    setLoadError(null);
+  const handleCreateWorkspace = async (onClose: () => void) => {
+    if (isCreating || isLoading) return;
+    setIsCreating(true);
+    setLoadErrorMsg(null);
     try {
-      // 1) 워크스페이스 이름 입력(임시 간단 UX) — 원치 않으면 생략 가능
-      const name = window.prompt("New workspace name? (optional)") || undefined;
-
-      // 2) create 호출 (user_prompt는 서버가 필요로 하는 필수 필드)
       await createWorkspace({
-        name,
-        user_prompt: "Created from Sidebar", // TODO: 프로젝트에 맞게 텍스트 수정
+        name: draftName.trim() || undefined,
+        user_prompt: "Created from Sidebar",
       });
-
-      // 3) 목록 리프레시
-      const data = await listWorkspaces();
-      setWorkspaces(data);
-
-      // 4) 성공 토스트(선택)
-      showToast("success", "Workspace created");
+      await fetchWorkspaces(); // refresh list after creation
+      onClose(); // close modal on success
+      showToast("success", "Workspace created.");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setLoadError(msg);
-      showToast("error", msg);
+      setLoadErrorMsg(getErrMsg(e));
+      showToast("error", getErrMsg(e));
     } finally {
-      setCreating(false);
+      setIsCreating(false);
     }
   };
 
@@ -210,22 +232,22 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             className="w-full"
             variant="flat"
             onPress={() => {
-              setNewName("");
-              setNewOpen(true);
+              setDraftName("");
+              setCreateOpen(true);
             }}
-            isDisabled={creating || loading} // 중복 클릭 방지용
+            isDisabled={isCreating || isLoading} // 중복 클릭 방지용
           >
-            {creating ? "Creating..." : "New topic"}
+            {isCreating ? "Creating..." : "New topic"}
           </Button>
         </div>
       </div>
 
       <div className="flex-1 overflow-auto p-2">
-        {loading && <p className="text-xs text-default-500">Loading…</p>}
-        {!loading && loadError && (
-          <p className="text-xs text-danger-500">Failed: {loadError}</p>
+        {isLoading && <p className="text-xs text-default-500">Loading…</p>}
+        {!isLoading && loadErrorMsg && (
+          <p className="text-xs text-danger-500">Failed: {loadErrorMsg}</p>
         )}
-        {!loading && !loadError && filtered.length === 0 && (
+        {!isLoading && !loadErrorMsg && filtered.length === 0 && (
           <p className="text-xs text-default-400">No topics found</p>
         )}
         <ul className="space-y-1">
@@ -249,7 +271,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           radius="none"
           className="w-full h-12 justify-start"
           onPress={() => {
-            setOpen(true);
+            setSettingsOpen(true);
           }}
           aria-label="Open Settings"
         >
@@ -261,7 +283,11 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       </div>
 
       {/* Settings Modal Here */}
-      <Modal isOpen={open} onOpenChange={setOpen} placement="center">
+      <Modal
+        isOpen={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        placement="center"
+      >
         <ModalContent>
           {(
             onClose // ← Heroui의 render-prop 패턴
@@ -280,10 +306,10 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                   value={apiKey}
                   onValueChange={(val) => {
                     setApiKey(val);
-                    if (error) setError("");
+                    if (errorMsg) setErrorMsg("");
                   }}
-                  isInvalid={!!error}
-                  errorMessage={error || undefined}
+                  isInvalid={!!errorMsg}
+                  errorMessage={errorMsg || undefined}
                   isRequired
                   description="Your key stays on this device."
                   endContent={
@@ -305,7 +331,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                   }
                 />
                 {saved && <p className="text-xs text-success">Saved ✓</p>}
-                {mounted && (
+                {isMounted && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Dark mode</span>
                     <Switch
@@ -334,7 +360,11 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       </Modal>
 
       {/* New Topic Modal Here */}
-      <Modal isOpen={newOpen} onOpenChange={setNewOpen} placement="center">
+      <Modal
+        isOpen={createOpen}
+        onOpenChange={setCreateOpen}
+        placement="center"
+      >
         <ModalContent>
           {(onClose) => (
             <>
@@ -342,44 +372,22 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
               <ModalBody>
                 <Input
                   label="Workspace name (optional)"
-                  value={newName}
-                  onValueChange={setNewName}
+                  value={draftName}
+                  onValueChange={setDraftName}
                   placeholder="e.g. Antiviral project"
-                  isDisabled={creating}
+                  isDisabled={isCreating}
                 />
               </ModalBody>
               <ModalFooter>
                 {/* 생성: 여기서만 API 호출 */}
                 <Button
                   color="primary"
-                  isDisabled={creating}
-                  onPress={async () => {
-                    if (creating) return;
-                    setCreating(true);
-                    setLoadError(null);
-                    try {
-                      await createWorkspace({
-                        name: newName.trim() || undefined,
-                        user_prompt: "Created from Sidebar",
-                      });
-                      const data = await listWorkspaces();
-                      setWorkspaces(data);
-                      // on success: 닫기
-                      onClose();
-                      // 선택: 토스트
-                      // showToast("success", "Workspace created");
-                    } catch (e) {
-                      const msg = e instanceof Error ? e.message : String(e);
-                      setLoadError(msg);
-                      // showToast("error", msg);
-                    } finally {
-                      setCreating(false);
-                    }
-                  }}
+                  isDisabled={isCreating}
+                  onPress={()=>handleCreateWorkspace(onClose)}
                 >
-                  {creating ? "Creating..." : "Create"}
+                  {isCreating ? "Creating..." : "Create"}
                 </Button>
-                                {/* 취소: 생성 호출 하지 않음 */}
+                {/* 취소: 생성 호출 하지 않음 */}
                 <Button
                   color="default"
                   onPress={() => {
