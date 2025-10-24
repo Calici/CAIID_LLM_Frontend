@@ -19,7 +19,9 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/modal";
+import { listWorkspaces, type WorkspaceSummary } from "@/app/api/wrappers";
 
+/*
 const MOCK_TOPICS = [
   "Lorum ipsum dolor",
   "Consectetur adipiscing",
@@ -32,6 +34,7 @@ const MOCK_TOPICS = [
   "Ullamco laboris nisi",
   "Ut aliquip ex ea",
 ]; // Random list for Project list showup
+*/
 
 const LS_KEY_OPENAI = "openai_api_key"; // OpenAI API KEY
 
@@ -53,6 +56,31 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     type: "success" | "error";
     msg: string;
   } | null>(null);
+
+  const [workspaces, setWorkspaces] = useState<
+    { name: string; uuid: string }[]
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true); // start loading
+    setLoadError(null); // reset former error
+    listWorkspaces() // # API CALL
+      .then((data) => {
+        if (alive) setWorkspaces(data);
+      })
+      .catch((e) => {
+        if (alive) setLoadError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []); //empty array means it will execute only on first render
 
   const showToast = (type: "success" | "error", msg: string, ms = 1500) => {
     setToast({ type, msg });
@@ -115,8 +143,8 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     setSaved(false);
   };
 
-  const filtered = MOCK_TOPICS.filter((t) =>
-    t.toLowerCase().includes(filter.toLowerCase())
+  const filtered = workspaces.filter((w) =>
+    w.name.toLowerCase().includes(filter.toLowerCase())
   );
 
   return (
@@ -158,15 +186,22 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       </div>
 
       <div className="flex-1 overflow-auto p-2">
+        {loading && <p className="text-xs text-default-500">Loading…</p>}
+        {!loading && loadError && (
+          <p className="text-xs text-danger-500">Failed: {loadError}</p>
+        )}
+        {!loading && !loadError && filtered.length === 0 && (
+          <p className="text-xs text-default-400">No topics found</p>
+        )}
         <ul className="space-y-1">
-          {filtered.map((t, i) => (
-            <li key={i}>
+          {filtered.map((w) => (
+            <li key={w.uuid}>
               <Button
                 variant="light"
                 radius="sm"
                 className="w-full justify-start"
               >
-                {t}
+                {w.name}
               </Button>
             </li>
           ))}

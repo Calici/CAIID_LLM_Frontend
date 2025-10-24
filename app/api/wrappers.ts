@@ -43,11 +43,11 @@ export async function renameWorkspace(
 ): Promise<void> {
   await axiosInstance.post(`/workspace.rename/${uuid}`, payload);
 }
-
+/*
 export async function streamChat(uuid payload handlers) {
   // needs to be implemented later ... 
 }
-
+*/
 export type FileRow = { // use for fsList()
   name: string;
   summary: string;
