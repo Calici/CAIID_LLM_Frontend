@@ -61,7 +61,7 @@
     "highlight.js": "^11.11.1",
     "intl-messageformat": "10.7.16",
     "next": "15.3.1",
-    "next-themes": "0.4.6",
+    "next-themes": "^0.4.6",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-markdown": "^10.1.0",
