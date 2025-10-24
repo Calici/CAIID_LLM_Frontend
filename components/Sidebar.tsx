@@ -12,6 +12,8 @@ import {
   faGear,
   faEye,
   faEyeSlash,
+  faPen,
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   Modal,
@@ -22,7 +24,9 @@ import {
 } from "@heroui/modal";
 import {
   listWorkspaces,
+  renameWorkspace,
   createWorkspace,
+  deleteWorkspace,
   type WorkspaceSummary,
 } from "@/app/api/wrappers";
 
@@ -199,6 +203,13 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     }
   };
 
+  //──────────────────────────────────────────────────────────────────────────
+  // Remove / Delete topics
+  //──────────────────────────────────────────────────────────────────────────
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+
   return (
     <div className="flex h-full flex-col">
       <div className="p-4 border-b">
@@ -252,14 +263,89 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         )}
         <ul className="space-y-1">
           {filtered.map((w) => (
-            <li key={w.uuid}>
-              <Button
-                variant="light"
-                radius="sm"
-                className="w-full justify-start"
-              >
-                {w.name}
-              </Button>
+            <li key={w.uuid} className="group">
+              {/* normal row or inline-edit row */}
+              {editingId === w.uuid ? (
+                // 인라인 rename 편집행
+                <div className="flex items-center gap-2">
+                  <Input
+                    size="sm"
+                    value={renameDraft}
+                    onValueChange={setRenameDraft}
+                    className="flex-1"
+                    autoFocus
+                  />
+                  <Button
+                    size="sm"
+                    color="primary"
+                    isDisabled={!renameDraft.trim()}
+                    onPress={async () => {
+                      await renameWorkspace(w.uuid, {
+                        name: renameDraft.trim(),
+                      });
+                      // 빠른 UX: 낙관적 반영
+                      setWorkspaces((prev) =>
+                        prev.map((x) =>
+                          x.uuid === w.uuid
+                            ? { ...x, name: renameDraft.trim() }
+                            : x
+                        )
+                      );
+                      setEditingId(null);
+                      setRenameDraft("");
+                      // 필요 시 재조회: await fetchWorkspaces();
+                    }}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    onPress={() => {
+                      setEditingId(null);
+                      setRenameDraft("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                // 일반 행 (hover actions)
+                <div className="flex items-center">
+                  <Button
+                    variant="light"
+                    radius="sm"
+                    className="w-full justify-start"
+                  >
+                    {w.name}
+                  </Button>
+                  <div className="ml-2 hidden items-center gap-1 group-hover:flex">
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      aria-label="Rename"
+                      onPress={() => {
+                        setEditingId(w.uuid);
+                        setRenameDraft(w.name);
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faPen} />
+                    </Button>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      aria-label="Delete"
+                      onPress={() => {
+                        setDeletingId(w.uuid);
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -383,7 +469,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                 <Button
                   color="primary"
                   isDisabled={isCreating}
-                  onPress={()=>handleCreateWorkspace(onClose)}
+                  onPress={() => handleCreateWorkspace(onClose)}
                 >
                   {isCreating ? "Creating..." : "Create"}
                 </Button>
@@ -401,6 +487,34 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           )}
         </ModalContent>
       </Modal>
+<Modal isOpen={!!deletingId} onOpenChange={() => setDeletingId(null)}>
+  <ModalContent>
+    {(onClose) => (
+      <>
+        <ModalHeader className="text-sm">Delete workspace</ModalHeader>
+        <ModalBody>
+          <p className="text-sm">This action cannot be undone. Continue?</p>
+        </ModalBody>
+        <ModalFooter>
+          <Button color="default" onPress={onClose}>Cancel</Button>
+          <Button
+            color="danger"
+            onPress={async () => {
+              if (!deletingId) return;
+              await deleteWorkspace(deletingId);
+              // 낙관적 제거
+              setWorkspaces((prev) => prev.filter((x) => x.uuid !== deletingId));
+              setDeletingId(null);
+              await fetchWorkspaces();
+            }}
+          >
+            Delete
+          </Button>
+        </ModalFooter>
+      </>
+    )}
+  </ModalContent>
+</Modal>
 
       {/* Toast (position: fixed) */}
       {toast && (

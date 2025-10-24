@@ -43,6 +43,10 @@ export async function renameWorkspace(
 ): Promise<void> {
   await axiosInstance.post(`/workspace.rename/${uuid}`, payload);
 }
+
+export async function deleteWorkspace(uuid: string): Promise<void> {
+  await axiosInstance.delete(`/workspace/${uuid}`);
+}
 /*
 export async function streamChat(uuid payload handlers) {
   // needs to be implemented later ... 
@@ -61,8 +65,8 @@ export async function fsList(): Promise<FileRow[]> {
 
 export async function fsTempUpload(
   name: string,
-  summary?: string,
-  file: File
+  file: File,
+  summary?: string
 ): Promise<{uuid: string}> {
   const formData = new FormData();  
   formData.append("name",name);

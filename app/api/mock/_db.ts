@@ -79,4 +79,7 @@ export const db = {
     ws.last_modified = nowISO();
     return ws;
   },
+  deleteWorkspace(uuid: string) {
+    return workspaces.delete(uuid); // boolean 반환
+  },
 };
