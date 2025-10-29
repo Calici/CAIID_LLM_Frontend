@@ -19,6 +19,9 @@ import MarkdownTest from "@/components/MarkdownTest";
 export default function Page() {
   const [leftOpen, setLeftOpen] = useState(true); // 왼쪽 사이드바 열림/닫힘
   const [rightOpen, setRightOpen] = useState(true); // 오른쪽 파일 패널 열림/닫힘
+  
+  // ★ 현재 선택된 워크스페이스
+  const [selectedWs, setSelectedWs] = useState<string | null>(null);
 
   const gridCols =
     leftOpen && rightOpen
@@ -50,18 +53,23 @@ export default function Page() {
           {/* Sidebar에 collapsed/onToggle 전달 */}
           <Sidebar
             collapsed={!leftOpen}
-            onToggle={() => setLeftOpen((v) => !v)}
+            onToggle={() => setLeftOpen(v => !v)}
+            // ★ 사이드바에서 토픽 선택/새토픽 준비 시 호출
+            onSelectWorkspace={(uuid) => setSelectedWs(uuid)}
           />
         </aside>
 
         {/* 가운데 채팅 패널 */}
         <section className="min-w-0">
-          <ChatPanel />
+          <ChatPanel
+            workspaceUuid={selectedWs}
+            onWorkspaceCreated={(newUuid) => setSelectedWs(newUuid)} // 최초 생성 후 선택
+          />
         </section>
 
         {/* 오른쪽 파일 패널 (원하시면 동일한 방식으로 토글) */}
         <aside className="hidden border-l lg:block">
-          <RightPane />
+          <RightPane publications = {[]}/>
         </aside>
       </div>
     </main>

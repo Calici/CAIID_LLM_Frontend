@@ -25,19 +25,20 @@ import {
 import {
   listWorkspaces,
   renameWorkspace,
-  createWorkspace,
   deleteWorkspace,
   type WorkspaceSummary,
 } from "@/app/api/wrappers";
+import { postChatStream } from "@/app/api/chatStream";
 
 const LS_KEY_OPENAI = "openai_api_key"; // OpenAI API KEY
 
 type SidebarProps = {
   collapsed?: boolean;
   onToggle?: () => void; // parent toggles left pane, Not using now
+  onSelectWorkspace?: (uuid: string | null) => void; // ★ 추가
 };
 
-export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
+export default function Sidebar({ collapsed = false, onToggle, onSelectWorkspace }: SidebarProps) {
   //──────────────────────────────────────────────────────────────────────────
   // UI state (settings & dialogs)
   //──────────────────────────────────────────────────────────────────────────
@@ -183,26 +184,30 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
     setSaved(false);
   };
 
-  const handleCreateWorkspace = async (onClose: () => void) => {
-    if (isCreating || isLoading) return;
+  async function handleCreateByChat(onClose: () => void) {
+    if (isCreating) return;
     setIsCreating(true);
-    setLoadErrorMsg(null);
     try {
-      await createWorkspace({
-        name: draftName.trim() || undefined,
-        user_prompt: "Created from Sidebar",
-      });
-      await fetchWorkspaces(); // refresh list after creation
-      onClose(); // close modal on success
-      showToast("success", "Workspace created.");
-    } catch (e) {
-      setLoadErrorMsg(getErrMsg(e));
-      showToast("error", getErrMsg(e));
+      await postChatStream(
+        { user_prompt: draftName.trim() || "New workspace" }, // uuid 없음 → 새로 생성
+        {
+          // 가볍게 끝만 받을 경우
+          onEnd: async () => {
+            // 서버에서 생성이 완료되면 목록을 다시 가져와 사이드바 갱신
+            const data = await listWorkspaces();
+            setWorkspaces(data);
+            onClose();
+            showToast("success", "Workspace created via chat.");
+          },
+          onError: (e) => {
+            showToast("error", e instanceof Error ? e.message : String(e));
+          },
+        }
+      );
     } finally {
       setIsCreating(false);
     }
-  };
-
+  }
   //──────────────────────────────────────────────────────────────────────────
   // Remove / Delete topics
   //──────────────────────────────────────────────────────────────────────────
@@ -244,9 +249,11 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
             variant="flat"
             onPress={() => {
               setDraftName("");
-              setCreateOpen(true);
+              // createOpen 모달도 생략 가능 (원하시면 남겨두고 라벨만 바꾸세요)
+              // 모달 없이 바로 새 대화 준비:
+              onSelectWorkspace?.(null);
             }}
-            isDisabled={isCreating || isLoading} // 중복 클릭 방지용
+            isDisabled={isCreating} // 중복 클릭 방지용
           >
             {isCreating ? "Creating..." : "New topic"}
           </Button>
@@ -316,6 +323,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
                     variant="light"
                     radius="sm"
                     className="w-full justify-start"
+                    onPress={() => onSelectWorkspace?.(w.uuid)}
                   >
                     {w.name}
                   </Button>
@@ -445,76 +453,41 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
         </ModalContent>
       </Modal>
 
-      {/* New Topic Modal Here */}
-      <Modal
-        isOpen={createOpen}
-        onOpenChange={setCreateOpen}
-        placement="center"
-      >
+      {/* Delete  Modal Here */}
+      <Modal isOpen={!!deletingId} onOpenChange={() => setDeletingId(null)}>
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-sm">New topic</ModalHeader>
+              <ModalHeader className="text-sm">Delete workspace</ModalHeader>
               <ModalBody>
-                <Input
-                  label="Workspace name (optional)"
-                  value={draftName}
-                  onValueChange={setDraftName}
-                  placeholder="e.g. Antiviral project"
-                  isDisabled={isCreating}
-                />
+                <p className="text-sm">
+                  This action cannot be undone. Continue?
+                </p>
               </ModalBody>
               <ModalFooter>
-                {/* 생성: 여기서만 API 호출 */}
-                <Button
-                  color="primary"
-                  isDisabled={isCreating}
-                  onPress={() => handleCreateWorkspace(onClose)}
-                >
-                  {isCreating ? "Creating..." : "Create"}
+                <Button color="default" onPress={onClose}>
+                  Cancel
                 </Button>
-                {/* 취소: 생성 호출 하지 않음 */}
                 <Button
-                  color="default"
-                  onPress={() => {
-                    onClose();
+                  color="danger"
+                  onPress={async () => {
+                    if (!deletingId) return;
+                    await deleteWorkspace(deletingId);
+                    // 낙관적 제거
+                    setWorkspaces((prev) =>
+                      prev.filter((x) => x.uuid !== deletingId)
+                    );
+                    setDeletingId(null);
+                    await fetchWorkspaces();
                   }}
                 >
-                  Cancel
+                  Delete
                 </Button>
               </ModalFooter>
             </>
           )}
         </ModalContent>
       </Modal>
-<Modal isOpen={!!deletingId} onOpenChange={() => setDeletingId(null)}>
-  <ModalContent>
-    {(onClose) => (
-      <>
-        <ModalHeader className="text-sm">Delete workspace</ModalHeader>
-        <ModalBody>
-          <p className="text-sm">This action cannot be undone. Continue?</p>
-        </ModalBody>
-        <ModalFooter>
-          <Button color="default" onPress={onClose}>Cancel</Button>
-          <Button
-            color="danger"
-            onPress={async () => {
-              if (!deletingId) return;
-              await deleteWorkspace(deletingId);
-              // 낙관적 제거
-              setWorkspaces((prev) => prev.filter((x) => x.uuid !== deletingId));
-              setDeletingId(null);
-              await fetchWorkspaces();
-            }}
-          >
-            Delete
-          </Button>
-        </ModalFooter>
-      </>
-    )}
-  </ModalContent>
-</Modal>
 
       {/* Toast (position: fixed) */}
       {toast && (

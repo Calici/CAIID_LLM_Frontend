@@ -8,14 +8,27 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
-
+import { postChatStream } from "@/app/api/chatStream";
+import { listWorkspaces } from "@/app/api/wrappers";
+import { ModelResponseT, ToolCallT } from "@/app/api/wrappers";
 /** ✅ 백엔드 스키마 그대로 사용 */
 type Msg = { role: "user" | "ai" | "sys"; msg: string };
 
-export default function ChatPanel() {
+type ChatPanelProps = {
+  workspaceUuid: string | null; // null이면 새로 만들 모드
+  onWorkspaceCreated?: (uuid: string) => void;
+};
+
+export default function ChatPanel({
+  workspaceUuid,
+  onWorkspaceCreated,
+}: ChatPanelProps) {
   const [messages, setMessages] = useState<Msg[]>([
     { role: "sys", msg: "System initialized. Messages may be logged for QA." },
-    { role: "ai", msg: "Hello! Ask me anything about your files or literature." },
+    {
+      role: "ai",
+      msg: "Hello! Ask me anything about your files or literature.",
+    },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,76 +46,25 @@ export default function ChatPanel() {
     const text = input.trim();
     if (!text || loading) return;
 
-    // 1) 사용자 메시지 + AI placeholder 추가
-    const userMsg: Msg = { role: "user", msg: text };
-    setMessages((prev) => [...prev, userMsg, { role: "ai", msg: "" }]);
+    // 메시지 추가/UI는 기존 로직 재사용
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", msg: text },
+      { role: "ai", msg: "" },
+    ]);
     setInput("");
     setLoading(true);
 
-    // 2) API 키 확인 (개발용: localStorage에서 가져와 헤더로 전달)
-    const apiKey =
-      typeof window !== "undefined" ? localStorage.getItem("openai_api_key") : null;
-
-    if (!apiKey) {
-      // 마지막 AI 메시지를 키 경고로 치환
-      setMessages((prev) => {
-        const next = [...prev];
-        const last = next.length - 1;
-        if (last >= 0 && next[last].role === "ai") {
-          next[last] = {
-            role: "ai",
-            msg: "⚠️ Missing API key. Open Settings and save your OpenAI key.",
-          };
-        }
-        return next;
-      });
-      setLoading(false);
-      return;
-    }
-
-    // 3) 서버 라우트로 스트리밍 요청
     try {
-      const payload = { messages: [...messages, userMsg] /* model/baseUrl 옵션 필요 시 추가 */ };
-
-      const resp = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-openai-key": apiKey, // 운영에선 제거하고 서버 ENV 사용 권장
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!resp.ok || !resp.body) {
-        throw new Error(`HTTP ${resp.status}`);
-      }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-
       let aiText = "";
 
-      // 4) SSE 스트림 파싱 → delta.content 이어붙이기
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk
-          .split("\n")
-          .map((l) => l.trim())
-          .filter(Boolean);
-
-        for (const line of lines) {
-          if (!line.startsWith("data:")) continue;
-          const data = line.slice(5).trim();
-          if (data === "[DONE]") continue;
-          try {
-            const json = JSON.parse(data);
-            const delta = json.choices?.[0]?.delta?.content ?? "";
-            if (delta) {
-              aiText += delta;
-              // 마지막 AI 메시지 업데이트
+      await postChatStream(
+        { user_prompt: text, uuid: workspaceUuid ?? undefined },
+        {
+          onChat: (chatEvt: ModelResponseT) => {
+            // {type:'ai'|'tool_call'...} 중 'ai'만 텍스트를 이어붙이는 식으로 처리
+            if (chatEvt.type === "ai") {
+              aiText += chatEvt.content ?? "";
               setMessages((prev) => {
                 const next = [...prev];
                 const last = next.length - 1;
@@ -111,20 +73,42 @@ export default function ChatPanel() {
                 }
                 return next;
               });
+            } else if (chatEvt.type === "tool_call") {
+              console.log("@@@@ tool call invoked");
+              // tool call invoke
             }
-          } catch {
-            // keep-alive 등 비JSON 라인은 무시
-          }
+          },
+          onRecord: (name, uuid) => {
+            console.log(
+              `@@@@@ onRecord Invoked / name: ${name}, uuid: ${uuid}`
+            );
+          },
+          onQuery: (pubList) => {
+            console.log(`@@@@@ onQuery Invoked / name: ${pubList}`, pubList);
+          },
+          // onError: (e) => {
+          //   setMessages(prev => {
+          //     const next = [...prev];
+          //     const last = next.length - 1;
+          //     if (last >= 0 && next[last].role === "ai") {
+          //       next[last] = {
+          //         role: "ai",
+          //         msg: `❌ Request failed: ${e instanceof Error ? e.message : String(e)}`,
+          //       };
+          //     }
+          //     return next;
+          //   });
+          // },
         }
-      }
-    } catch (err: any) {
+      );
+    } catch (e) {
       setMessages((prev) => {
         const next = [...prev];
         const last = next.length - 1;
         if (last >= 0 && next[last].role === "ai") {
           next[last] = {
             role: "ai",
-            msg: `❌ Request failed: ${err?.message ?? "unknown error"}`,
+            msg: `❌ Request failed: ${e instanceof Error ? e.message : String(e)}`,
           };
         }
         return next;
@@ -147,7 +131,9 @@ export default function ChatPanel() {
             Messages are stored locally during development
           </p>
         </div>
-        <div className="text-xs text-default-500">{loading ? "Streaming..." : ""}</div>
+        <div className="text-xs text-default-500">
+          {loading ? "Streaming..." : ""}
+        </div>
       </div>
 
       {/* 채팅 히스토리 영역 */}
@@ -158,17 +144,25 @@ export default function ChatPanel() {
               m.role === "user"
                 ? "bg-content2"
                 : m.role === "ai"
-                ? "bg-content1"
-                : "bg-default-50 border border-dashed";
+                  ? "bg-content1"
+                  : "bg-default-50 border border-dashed";
             return (
-              <Card key={i} className={`px-3 py-2 ${cls}`} shadow="none" radius="sm">
+              <Card
+                key={i}
+                className={`px-3 py-2 ${cls}`}
+                shadow="none"
+                radius="sm"
+              >
                 <div className="text-xs mb-1 font-medium text-default-500">
                   {roleLabel(m.role)}
                 </div>
                 {m.role === "ai" ? (
                   // LLM 응답에만 Markdown 적용
                   <div className="prose prose-sm max-w-none prose-pre:overflow-x-auto">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                    >
                       {m.msg}
                     </ReactMarkdown>
                   </div>

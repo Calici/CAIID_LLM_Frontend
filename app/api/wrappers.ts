@@ -11,15 +11,52 @@ export async function listWorkspaces(): Promise<WorkspaceSummary[]> {
   return response.data;
 }
 
+// export type MessageT =
+//   | { type: "user"; content: string }
+//   | { type: "ai"; content: string }
+//   | { type: "tool_call"; tool_name: string; tool_id: string; tool_call_id: string; is_complete: boolean }
+//   | { type: "ai_end" }; // server sends as separate SSE event
+
+/* Message History Structure */
+export type UserMessageT = {
+  type: "user", content: string
+}
+export type ModelMessageT = {
+  type: "ai", content: string
+}
+export type ToolCallT = {
+  type: "tool_call", tool_name: string, tool_id: string, tool_call_id: string, is_complete: boolean
+}
+
+/* This defines the messages that the model will send. I.e. returned from the SSE event */
+export type ModelResponseT = ModelMessageT | ToolCallT
+
+/* This defines the whole structure */
+export type MessageT = UserMessageT | ModelMessageT | ToolCallT
+export type HistoryT = MessageT[]
+
+/* Workspace State */
+export type StateT = {
+  messages: MessageT[]
+  queries: {
+    title: string,
+    source: string,
+    abstract: string | null,
+    authors: string[],
+    link: string | null
+  }[]
+}
+
+
 export type Workspace = {
   //use for createWorkSpace() and getWorkSpace()
   name: string;
   uuid: string;
-  chat_history: any[];
+  chat_history: MessageT[];
   last_modified: string;
   create_date: string;
 };
-
+/*
 export async function createWorkspace(payload: {
   name?: string;
   user_prompt: string;
@@ -29,7 +66,7 @@ export async function createWorkspace(payload: {
     payload
   );
   return response.data;
-}
+}*/
 
 
 export async function getWorkspace(uuid: string): Promise<Workspace> {
