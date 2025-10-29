@@ -10,7 +10,12 @@ import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 import { postChatStream } from "@/app/api/chatStream";
 import { listWorkspaces } from "@/app/api/wrappers";
-import { ModelResponseT, ToolCallT } from "@/app/api/wrappers";
+import {
+  ModelResponseT,
+  ToolCallT,
+  getWorkspace,
+  MessageT,
+} from "@/app/api/wrappers";
 /** ✅ 백엔드 스키마 그대로 사용 */
 type Msg = { role: "user" | "ai" | "sys"; msg: string };
 
@@ -41,6 +46,43 @@ export default function ChatPanel({
       behavior: "smooth",
     });
   }, [messages.length]);
+  
+  useEffect(() => {
+    // 선택된 워크스페이스가 있으면 서버에서 히스토리 로드
+    // 없으면(=새 채팅 모드) 초기 메세지 유지
+    if (!workspaceUuid) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const ws = await getWorkspace(workspaceUuid);
+        // ws.chat_history.messages: MessageT[] -> 우리 Msg[]로 변환
+        const mapped: Msg[] = ws.chat_history.messages.map((m: MessageT) => {
+          if (m.type === "user") return { role: "user", msg: m.content };
+          if (m.type === "ai") return { role: "ai", msg: m.content };
+          // tool_call은 간단히 시스템 라벨로 보여주거나 숨길 수 있어요
+          return {
+            role: "sys",
+            msg: `[tool_call] ${m.tool_name ?? ""} (${m.tool_id ?? ""})`,
+          };
+        });
+        if (!cancelled) {
+          setMessages(
+            mapped.length
+              ? mapped
+              : [{ role: "sys", msg: "Loaded history (empty)." }]
+          );
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setMessages([{ role: "sys", msg: "⚠️ Failed to load history." }]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceUuid]);
 
   const send = async () => {
     const text = input.trim();
