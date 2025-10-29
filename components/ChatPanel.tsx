@@ -46,7 +46,7 @@ export default function ChatPanel({
       behavior: "smooth",
     });
   }, [messages.length]);
-  
+
   useEffect(() => {
     // 선택된 워크스페이스가 있으면 서버에서 히스토리 로드
     // 없으면(=새 채팅 모드) 초기 메세지 유지
@@ -124,6 +124,9 @@ export default function ChatPanel({
             console.log(
               `@@@@@ onRecord Invoked / name: ${name}, uuid: ${uuid}`
             );
+            if (!workspaceUuid) {
+              onWorkspaceCreated?.(uuid);
+            }
           },
           onQuery: (pubList) => {
             console.log(`@@@@@ onQuery Invoked / name: ${pubList}`, pubList);
