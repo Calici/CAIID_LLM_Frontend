@@ -33,13 +33,9 @@ import {
   getLlmServer,
   updateLlmServer,
   type LlmServerConfig,
-  ServerPayload,
   ServerConfig,
 } from "@/app/api/wrappers";
-import { postChatStream } from "@/app/api/chatStream";
-import SafeButton from './safebutton/safebutton'
-
-const LS_KEY_OPENAI = "openai_api_key"; // OpenAI API KEY
+import SafeButton from "./safebutton/safebutton";
 
 type SidebarProps = {
   collapsed?: boolean;
@@ -99,9 +95,9 @@ export default function Sidebar({
     // Search topics feature
     () =>
       workSpaces.filter((w) =>
-        w.name.toLowerCase().includes(filter.toLowerCase())
+        w.name.toLowerCase().includes(filter.toLowerCase()),
       ),
-    [workSpaces, filter]
+    [workSpaces, filter],
   );
 
   //──────────────────────────────────────────────────────────────────────────
@@ -227,14 +223,22 @@ export default function Sidebar({
 
   const setMode = React.useCallback((mode: Mode) => {
     if (mode === "lite") {
-      setConfig((prevConfig) => ({ ...prevConfig, api_url: DEFAULT_OPENAI_URL, api_key: null, model_name: "gpt-5-nano"}))
-      __setMode("lite")
+      setConfig((prevConfig) => ({
+        ...prevConfig,
+        api_url: DEFAULT_OPENAI_URL,
+        api_key: null,
+        model_name: "gpt-5-nano",
+      }));
+      __setMode("lite");
+    } else {
+      setConfig((prevConfig) => ({
+        ...prevConfig,
+        api_url: null,
+        api_key: null,
+      }));
+      __setMode("heavy");
     }
-    else {
-      setConfig((prevConfig) => ({ ...prevConfig, api_url: null, api_key: null}))
-      __setMode("heavy")
-    }
-  }, [])
+  }, []);
 
   // Save Button Handler
   const handleServerSave = (onClose: () => void) => {
@@ -341,8 +345,8 @@ export default function Sidebar({
                         prev.map((x) =>
                           x.uuid === w.uuid
                             ? { ...x, name: renameDraft.trim() }
-                            : x
-                        )
+                            : x,
+                        ),
                       );
                       setEditingId(null);
                       setRenameDraft("");
@@ -433,7 +437,7 @@ export default function Sidebar({
       >
         <ModalContent>
           {(
-            onClose // ← Heroui의 render-prop 패턴
+            onClose, // ← Heroui의 render-prop 패턴
           ) => (
             <>
               <ModalHeader className="text-sm">Settings</ModalHeader>
@@ -480,9 +484,12 @@ export default function Sidebar({
                       config.model_name === null ? [] : [config.model_name]
                     }
                     onSelectionChange={(k) => {
-                      const { currentKey } = k
-                      if (currentKey !== undefined&& currentKey.length !== 0) {
-                        setConfig((prevConfig) => ({ ...prevConfig, model_name: currentKey}))
+                      const { currentKey } = k;
+                      if (currentKey !== undefined && currentKey.length !== 0) {
+                        setConfig((prevConfig) => ({
+                          ...prevConfig,
+                          model_name: currentKey,
+                        }));
                       }
                     }}
                   >
@@ -514,42 +521,10 @@ export default function Sidebar({
                     onValueChange={(v) =>
                       setConfig((prevConfig) => ({ ...prevConfig, api_key: v }))
                     }
+                    isInvalid={config.api_key === null}
+                    errorMessage={<p>Enter API Key (anything if no api key)</p>}
                   />
                 </div>
-
-                {/* <Input
-                  label="OpenAI API Key"
-                  placeholder="sk-**************************"
-                  variant="bordered"
-                  type={showKey ? "text" : "password"}
-                  value={apiKey}
-                  onValueChange={(val) => {
-                    setApiKey(val);
-                    if (errorMsg) setErrorMsg("");
-                  }}
-                  isInvalid={!!errorMsg}
-                  errorMessage={errorMsg || undefined}
-                  isRequired
-                  description="Your key stays on this device."
-                  endContent={
-                    <Button
-                      isIconOnly
-                      variant="light"
-                      size="sm"
-                      radius="full"
-                      aria-label={showKey ? "Hide API key" : "Show API key"}
-                      onPress={() => setShowKey((v) => !v)}
-                      onMouseDown={(e) => e.preventDefault()} // prevents input losing focus when clicking Eye button
-                      className="min-w-0"
-                    >
-                      <FontAwesomeIcon
-                        icon={showKey ? faEyeSlash : faEye}
-                        className="text-default-500"
-                      />
-                    </Button>
-                  }
-                /> */}
-                {/* {saved && <p className="text-xs text-success">Saved ✓</p>} */}
                 {isMounted && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Dark mode</span>
@@ -616,7 +591,7 @@ export default function Sidebar({
                     await deleteWorkspace(deletingId);
                     // 낙관적 제거
                     setWorkspaces((prev) =>
-                      prev.filter((x) => x.uuid !== deletingId)
+                      prev.filter((x) => x.uuid !== deletingId),
                     );
                     setDeletingId(null);
                     onSelectWorkspace(null);
