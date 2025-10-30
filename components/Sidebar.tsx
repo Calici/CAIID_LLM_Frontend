@@ -38,6 +38,7 @@ type SidebarProps = {
   onSelectWorkspace: (uuid: string | null) => void; // ★ 추가
   workSpaces: WorkspaceSummary[];
   activeUuid: string | null;
+  setWorkspaces: React.Dispatch<React.SetStateAction<WorkspaceSummary[]>>;
 };
 
 export default function Sidebar({
@@ -46,6 +47,7 @@ export default function Sidebar({
   onSelectWorkspace,
   workSpaces,
   activeUuid,
+  setWorkspaces,
 }: SidebarProps) {
   //──────────────────────────────────────────────────────────────────────────
   // UI state (settings & dialogs)
@@ -227,7 +229,7 @@ export default function Sidebar({
     <div className="flex h-full flex-col">
       <div className="p-4 border-b">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Topics</h2>
+          <h2 className="font-semibold">Topics</h2>
           <Button
             isIconOnly
             variant="light"
@@ -288,7 +290,7 @@ export default function Sidebar({
                     className="flex-1"
                     autoFocus
                   />
-                  {/* <Button
+                  <Button
                     size="sm"
                     color="primary"
                     isDisabled={!renameDraft.trim()}
@@ -297,11 +299,9 @@ export default function Sidebar({
                         name: renameDraft.trim(),
                       });
                       // 빠른 UX: 낙관적 반영
-                      setworkSpaces((prev) =>
+                      setWorkspaces((prev) =>
                         prev.map((x) =>
-                          x.uuid === w.uuid
-                            ? { ...x, name: renameDraft.trim() }
-                            : x
+                          x.uuid === w.uuid ? { ...x, name: renameDraft.trim() } : x
                         )
                       );
                       setEditingId(null);
@@ -310,7 +310,7 @@ export default function Sidebar({
                     }}
                   >
                     Save
-                  </Button> */}
+                  </Button>
                   <Button
                     size="sm"
                     variant="light"
@@ -477,21 +477,18 @@ export default function Sidebar({
                 <Button color="default" onPress={onClose}>
                   Cancel
                 </Button>
-                {/* <Button
+                <Button
                   color="danger"
                   onPress={async () => {
                     if (!deletingId) return;
                     await deleteWorkspace(deletingId);
                     // 낙관적 제거
-                    setworkSpaces((prev) =>
-                      prev.filter((x) => x.uuid !== deletingId)
-                    );
+                      setWorkspaces(prev => prev.filter(x => x.uuid !== deletingId));
                     setDeletingId(null);
-                    await fetchworkSpaces();
                   }}
                 >
                   Delete
-                </Button> */}
+                </Button>
               </ModalFooter>
             </>
           )}

@@ -101,10 +101,11 @@ export default function FilesPanel() {
   return (
     <div className="h-1/3 flex-1">
       <div className="flex flex-col h-full min-h-0 w-full">
-        <div className="flex flex-row items-center gap-3 p-3 border-b justify-between w-full">
-          <h2 className="text-sm font-semibold">Files</h2>
-          <p className="bg-red-600">
+        <div className="flex flex-row items-center gap-3 px-3 py-2 border-b justify-between w-full">
+          <h2 className="text-lg font-semibold">Files</h2>
+          <p>
             <Button
+              color="primary"
               endContent={<FontAwesomeIcon icon={faUpload} />}
               onPress={() => setFileUploadModalOpen(true)}
             >

@@ -191,6 +191,7 @@ export default function Page() {
             activeUuid={activeUuid}
             // ★ 사이드바에서 토픽 선택/새토픽 준비 시 호출
             onSelectWorkspace={setActiveUuid}
+            setWorkspaces={setWorkspaces}
           />
         </aside>
 

@@ -53,6 +53,9 @@ export default function RightPane({ publications }: RightPaneT) {
   return (
     <div className="h-full flex flex-col min-h-0">
       {/* ↑ 위쪽 고정 높이(예: 260px). 필요 시 조정/리사이저 추가 가능 */}
+      <div className="flex flex-row items-center gap-3 p-3 border-b justify-between w-full">
+        <p className="font-semibold">Publications</p>
+      </div>
       <div className="border-b h-2/3 overflow-auto">
         {publications.map((p,i) => (
           <PublicationItem key={i} {...p} />
