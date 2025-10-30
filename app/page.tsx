@@ -40,7 +40,7 @@ function useWorkspace(
         const messages = prevWorkspace.chat_history.messages.slice();
         const lastMessage = prevWorkspace.chat_history.messages.slice(-1)[0];
         if (lastMessage.type === "user") {
-          messages.splice((messages.length = 1), 1);
+          messages.splice((messages.length - 1), 1);
         }
         messages.push({ type: "user", content: msg });
         return {

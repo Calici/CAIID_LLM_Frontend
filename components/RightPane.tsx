@@ -37,8 +37,7 @@ function PublicationItem(publication: PublicationT) {
 
         {/* Abstract */}
         {publication.abstract && (
-          <p className="text-sm text-gray-700 line-clamp-3">
-            {publication.abstract}
+          <p className="text-sm text-gray-700 line-clamp-3" dangerouslySetInnerHTML={{__html: publication.abstract}}>
           </p>
         )}
       </div>

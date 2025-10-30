@@ -323,7 +323,7 @@ export default function Sidebar({
                 </div>
               ) : (
                 // 일반 행 (hover actions)
-                <div className="flex items-center">
+                <div className="flex items-center text-ellipsis">
                   <Button
                     variant={w.uuid === activeUuid ? "flat" : "light"}
                     color={w.uuid === activeUuid ? "primary" : "default"}
@@ -333,7 +333,7 @@ export default function Sidebar({
                     }`}
                     onPress={() => onSelectWorkspace?.(w.uuid)}
                   >
-                    {w.name}
+                    {w.name.slice(0, 40)}
                   </Button>
                   <div className="ml-2 hidden items-center gap-1 group-hover:flex">
                     <Button
