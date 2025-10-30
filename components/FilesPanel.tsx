@@ -11,11 +11,12 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/modal";
-import { faUpload, faFile } from "@fortawesome/free-solid-svg-icons";
+import { faUpload, faFile, faTrash } from "@fortawesome/free-solid-svg-icons";
 import {
   agentSummariseFile,
   fsConfirmUpload,
   fsTempUpload,
+  fsDelete,
 } from "@/app/api/wrappers";
 import SafeButton from "./safebutton/safebutton";
 import { Input } from "@heroui/input";
@@ -54,6 +55,9 @@ export default function FilesPanel() {
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
   const [needsRename, setNeedsRename] = React.useState(false);
   const [proposedName, setProposedName] = React.useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = React.useState<FileRow | null>(
+    null
+  );
 
   const handleUpload = React.useCallback(
     //Temp Upload
@@ -122,7 +126,7 @@ export default function FilesPanel() {
           {files.map((f) => (
             <div
               key={f.uuid} // ← uuid로 key
-              className="flex items-center justify-between gap-3 px-2 py-2 rounded-lg hover:bg-default-100 cursor-pointer"
+              className="group flex items-center justify-between gap-3 px-2 py-2 rounded-lg hover:bg-default-100 cursor-pointer"
               title={f.summary}
             >
               <div className="min-w-0">
@@ -132,6 +136,16 @@ export default function FilesPanel() {
                     {f.summary}
                   </div>
                 )}
+              </div>
+              <div className="hidden group-hover:flex">
+                <Button
+                  isIconOnly
+                  onPress={() => {
+                    setConfirmDelete(f);
+                  }}
+                >
+                  <FontAwesomeIcon icon={faTrash} />
+                </Button>
               </div>
             </div>
           ))}
@@ -221,6 +235,40 @@ export default function FilesPanel() {
                 <SafeButton color="primary" onPress={handleConfirmUpload}>
                   Save
                 </SafeButton>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={!!confirmDelete}
+        onOpenChange={() => setConfirmDelete(null)}
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="text-sm">Delete file</ModalHeader>
+              <ModalBody>
+                <p className="text-sm">
+                  Delete <b>{confirmDelete?.name}</b>?
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button onPress={onClose}>Cancel</Button>
+                <Button
+                  color="danger"
+                  onPress={async () => {
+                    if (!confirmDelete) return;
+                    await fsDelete(confirmDelete.uuid);
+                    setFiles((prev) =>
+                      prev.filter((x) => x.uuid !== confirmDelete.uuid)
+                    );
+                    setConfirmDelete(null);
+                  }}
+                >
+                  Delete
+                </Button>
               </ModalFooter>
             </>
           )}

@@ -148,6 +148,10 @@ export async function agentSummariseFile(tempFileUuid:string): Promise<string> {
   return response.data
 }
 
+export async function fsDelete(fileUuid: string): Promise<void> {
+  await axiosInstance.delete(`/fs/${fileUuid}`);
+}
+
 /** 남은 wrapper : 	listWorkspaces()	GET	워크스페이스 목록 가져오기 #
 	createWorkspace(payload)	POST	새 워크스페이스 생성  # 
 	getWorkspace(uuid)	GET	특정 워크스페이스 세부 정보 조회 #
