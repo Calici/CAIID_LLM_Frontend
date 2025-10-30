@@ -27,6 +27,7 @@ import {
   renameWorkspace,
   deleteWorkspace,
   type WorkspaceSummary,
+  getLlmServer,
 } from "@/app/api/wrappers";
 import { postChatStream } from "@/app/api/chatStream";
 
@@ -300,7 +301,9 @@ export default function Sidebar({
                       // 빠른 UX: 낙관적 반영
                       setWorkspaces((prev) =>
                         prev.map((x) =>
-                          x.uuid === w.uuid ? { ...x, name: renameDraft.trim() } : x
+                          x.uuid === w.uuid
+                            ? { ...x, name: renameDraft.trim() }
+                            : x
                         )
                       );
                       setEditingId(null);
@@ -455,6 +458,18 @@ export default function Sidebar({
                 <Button color="primary" onPress={handleSave}>
                   Save
                 </Button>
+                <Button
+                  onPress={async () => {
+                    try {
+                      const serverInfo = await getLlmServer();
+                      alert(JSON.stringify(serverInfo, null, 2)); // 보기 좋게 들여쓰기
+                    } catch (e) {
+                      alert("Error: " + (e as Error).message);
+                    }
+                  }}
+                >
+                  TestCur
+                </Button>
               </ModalFooter>
             </>
           )}
@@ -482,7 +497,9 @@ export default function Sidebar({
                     if (!deletingId) return;
                     await deleteWorkspace(deletingId);
                     // 낙관적 제거
-                      setWorkspaces(prev => prev.filter(x => x.uuid !== deletingId));
+                    setWorkspaces((prev) =>
+                      prev.filter((x) => x.uuid !== deletingId)
+                    );
                     setDeletingId(null);
                     onSelectWorkspace(null);
                   }}

@@ -152,6 +152,27 @@ export async function fsDelete(fileUuid: string): Promise<void> {
   await axiosInstance.delete(`/fs/${fileUuid}`);
 }
 
+
+/** LLM Server config 타입 */
+export type LlmServerConfig = {
+  username: string;
+  name: string;
+  model_name: string;
+  api_url: string;
+};
+
+/** [GET] /server : 현재 LLM 서버 설정 조회 */
+export async function getLlmServer(): Promise<LlmServerConfig> {
+  const res = await axiosInstance.get<LlmServerConfig>("/server");
+  return res.data;
+}
+
+/** [POST] /server.update : LLM 추론 서버 설정 업데이트 */
+export async function updateLlmServer(payload: LlmServerConfig & { api_key: string }): Promise<LlmServerConfig> {
+  const res = await axiosInstance.post<LlmServerConfig>("/server.update", payload);
+  return res.data;
+}
+
 /** 남은 wrapper : 	listWorkspaces()	GET	워크스페이스 목록 가져오기 #
 	createWorkspace(payload)	POST	새 워크스페이스 생성  # 
 	getWorkspace(uuid)	GET	특정 워크스페이스 세부 정보 조회 #
