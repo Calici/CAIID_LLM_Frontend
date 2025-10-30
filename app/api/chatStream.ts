@@ -53,6 +53,7 @@ type Handlers = {
   onChat: (v: ModelResponseT) => void;
   onRecord: (name: string, uuid: string) => void;
   onQuery: (v: PublicationT[]) => void;
+  onEnd?: () => void
 };
 
 export async function postChatStream(payload: ChatPayload, handlers: Handlers) {
@@ -104,4 +105,5 @@ export async function postChatStream(payload: ChatPayload, handlers: Handlers) {
     // });
     // append
   }
+  handlers.onEnd?.()
 }

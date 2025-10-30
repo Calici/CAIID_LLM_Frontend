@@ -13,7 +13,8 @@ import Sidebar from "@/components/Sidebar";
 import ChatPanel from "@/components/ChatPanel";
 import RightPane from "@/components/RightPane";
 import FilesPanel from "@/components/FilesPanel";
-import { useEffect, useState } from "react";
+import { act, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React from "react";
 import MarkdownTest from "@/components/MarkdownTest";
 import { getWorkspace, listWorkspaces, Workspace } from "./api/wrappers";
@@ -24,6 +25,7 @@ function useWorkspace(
   appendUuid: (name: string, uuid: string) => void
 ) {
   const [workSpace, setWorkSpace] = useState<Workspace | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false)
   useEffect(() => {
     if (uuid === null) {
       setWorkSpace(null);
@@ -49,9 +51,11 @@ function useWorkspace(
           },
         };
       });
+      setIsGenerating(true)
       postChatStream(
         { user_prompt: msg, uuid: uuid === null ? undefined : uuid },
         {
+          onEnd: () => setIsGenerating(false),
           onChat: (v) => {
             setWorkSpace((prevWorkspace) => {
               if (prevWorkspace === null) return null;
@@ -106,12 +110,15 @@ function useWorkspace(
     },
     [uuid]
   );
-  return { workSpace, sendMessage };
+  return { workSpace, sendMessage, isGenerating };
 }
 
 export default function Page() {
   const [leftOpen, setLeftOpen] = useState(true); // 왼쪽 사이드바 열림/닫힘
   const [rightOpen, setRightOpen] = useState(true); // 오른쪽 파일 패널 열림/닫힘
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   // ★ 현재 선택된 워크스페이스
   const [selectedWs, setSelectedWs] = useState<string | null>(null);
@@ -120,12 +127,37 @@ export default function Page() {
     { name: string; uuid: string }[]
   >([]);
 
-  const [activeUuid, setActiveUuid] = useState<string | null>(null);
-  const appendUuid = React.useCallback((name: string, uuid: string) => {
-    setWorkspaces((prevWorkspaces) => [{ name, uuid }, ...prevWorkspaces]);
-    setActiveUuid(uuid);
-  }, []);
-  const { workSpace, sendMessage } = useWorkspace(activeUuid, appendUuid);
+  const activeUuid = searchParams.get("uuid");
+
+  const setActiveUuid = React.useCallback(
+    (uuid: string | null) => {
+      const activeUuid = searchParams.get("uuid");
+      if (activeUuid === uuid) {
+        return;
+      }
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (uuid !== null) {
+        params.set("uuid", uuid);
+      } else {
+        params.delete("uuid");
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    },
+    [pathname, router, searchParams]
+  );
+
+  const appendUuid = React.useCallback(
+    (name: string, uuid: string) => {
+      setWorkspaces((prevWorkspaces) => [{ name, uuid }, ...prevWorkspaces]);
+      setActiveUuid(uuid);
+    },
+    [setActiveUuid]
+  );
+  const { workSpace, sendMessage, isGenerating } = useWorkspace(activeUuid, appendUuid);
 
   useEffect(() => {
     listWorkspaces().then((v) => {
@@ -133,14 +165,7 @@ export default function Page() {
     });
   }, []);
 
-  const gridCols =
-    leftOpen && rightOpen
-      ? "lg:grid-cols-[350px_1fr_500px]"
-      : leftOpen && !rightOpen
-        ? "lg:grid-cols-[350px_1fr_0px]"
-        : !leftOpen && rightOpen
-          ? "lg:grid-cols-[0px_1fr_500px]"
-          : "lg:grid-cols-[0px_1fr_0px]";
+
 
   return (
     <main className="h-screen w-full">
@@ -163,6 +188,7 @@ export default function Page() {
             collapsed={!leftOpen}
             onToggle={() => setLeftOpen((v) => !v)}
             workSpaces={workSpaces}
+            activeUuid={activeUuid}
             // ★ 사이드바에서 토픽 선택/새토픽 준비 시 호출
             onSelectWorkspace={setActiveUuid}
           />
@@ -175,6 +201,8 @@ export default function Page() {
             // onWorkspaceCreated={(newUuid) => setSelectedWs(newUuid)} // 최초 생성 후 선택
             messages={workSpace === null ? [] : workSpace.chat_history.messages}
             sendMessage={sendMessage}
+            isGenerating={isGenerating}
+            
           />
         </section>
 

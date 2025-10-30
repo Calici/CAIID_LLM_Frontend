@@ -20,7 +20,6 @@ import {
 import SafeButton from "./safebutton/safebutton";
 import { Input } from "@heroui/input";
 import { fsList, type FileRow } from "@/app/api/wrappers";
-// const sampleFiles = ["report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf","report.pdf",];
 
 export default function FilesPanel() {
   // File renew related

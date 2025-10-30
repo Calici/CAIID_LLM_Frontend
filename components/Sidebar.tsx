@@ -36,14 +36,16 @@ type SidebarProps = {
   collapsed?: boolean;
   onToggle?: () => void; // parent toggles left pane, Not using now
   onSelectWorkspace: (uuid: string | null) => void; // ★ 추가
-  workSpaces: WorkspaceSummary[]
+  workSpaces: WorkspaceSummary[];
+  activeUuid: string | null;
 };
 
 export default function Sidebar({
   collapsed = false,
   onToggle,
   onSelectWorkspace,
-  workSpaces
+  workSpaces,
+  activeUuid,
 }: SidebarProps) {
   //──────────────────────────────────────────────────────────────────────────
   // UI state (settings & dialogs)
@@ -324,9 +326,12 @@ export default function Sidebar({
                 // 일반 행 (hover actions)
                 <div className="flex items-center">
                   <Button
-                    variant="light"
+                    variant={w.uuid === activeUuid ? "flat" : "light"}
+                    color={w.uuid === activeUuid ? "primary" : "default"}
                     radius="sm"
-                    className="w-full justify-start"
+                    className={`w-full justify-start${
+                      w.uuid === activeUuid ? " font-semibold" : ""
+                    }`}
                     onPress={() => onSelectWorkspace?.(w.uuid)}
                   >
                     {w.name}
