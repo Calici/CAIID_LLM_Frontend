@@ -33,6 +33,22 @@ function useWorkspace(
   }, [uuid]);
   const sendMessage = React.useCallback(
     (msg: string) => {
+      setWorkSpace((prevWorkspace) => {
+        if (prevWorkspace === null) return null;
+        const messages = prevWorkspace.chat_history.messages.slice();
+        const lastMessage = prevWorkspace.chat_history.messages.slice(-1)[0];
+        if (lastMessage.type === "user") {
+          messages.splice((messages.length = 1), 1);
+        }
+        messages.push({ type: "user", content: msg });
+        return {
+          ...prevWorkspace,
+          chat_history: {
+            ...prevWorkspace.chat_history,
+            messages,
+          },
+        };
+      });
       postChatStream(
         { user_prompt: msg, uuid: uuid === null ? undefined : uuid },
         {
@@ -40,19 +56,24 @@ function useWorkspace(
             setWorkSpace((prevWorkspace) => {
               if (prevWorkspace === null) return null;
               const messages = prevWorkspace.chat_history.messages.slice();
-              const lastMessage = prevWorkspace.chat_history.messages.slice(-1)[0];
+              const lastMessage =
+                prevWorkspace.chat_history.messages.slice(-1)[0];
               if (lastMessage.type === "ai" && v.type === "ai") {
-                messages.splice(messages.length - 1, 1)
-                messages.push({type: "ai", content: lastMessage.content + v.content})
+                messages.splice(messages.length - 1, 1);
+                messages.push({
+                  type: "ai",
+                  content: lastMessage.content + v.content,
+                });
               } else if (
                 v.type === "tool_call" &&
                 lastMessage.type === "tool_call" &&
                 v.tool_call_id === lastMessage.tool_call_id
               ) {
-                messages.splice(messages.length - 1, 1)
+                messages.splice(messages.length - 1, 1);
                 messages.push({
-                  ...lastMessage, is_complete: v.is_complete
-                })
+                  ...lastMessage,
+                  is_complete: v.is_complete,
+                });
               } else {
                 messages.push(v);
               }
@@ -85,7 +106,7 @@ function useWorkspace(
     },
     [uuid]
   );
-  return { workSpace, sendMessage}
+  return { workSpace, sendMessage };
 }
 
 export default function Page() {
@@ -94,40 +115,37 @@ export default function Page() {
 
   // ★ 현재 선택된 워크스페이스
   const [selectedWs, setSelectedWs] = useState<string | null>(null);
-  
-  const [workSpaces, setWorkspaces] = useState<{ name: string, uuid: string }[]> ([])
 
-  const [activeUuid, setActiveUuid] = useState<string | null>(null)
+  const [workSpaces, setWorkspaces] = useState<
+    { name: string; uuid: string }[]
+  >([]);
+
+  const [activeUuid, setActiveUuid] = useState<string | null>(null);
   const appendUuid = React.useCallback((name: string, uuid: string) => {
-    setWorkspaces((prevWorkspaces) => [{ name, uuid}, ...prevWorkspaces])
-    setActiveUuid(uuid)
-  }, [ ])
-  const { 
-    workSpace, sendMessage
-  } = useWorkspace(activeUuid, appendUuid)
+    setWorkspaces((prevWorkspaces) => [{ name, uuid }, ...prevWorkspaces]);
+    setActiveUuid(uuid);
+  }, []);
+  const { workSpace, sendMessage } = useWorkspace(activeUuid, appendUuid);
 
-  useEffect(()=> {
-    listWorkspaces().then((v)=>{
-      setWorkspaces(v)
-    })
-  }, [])
-
+  useEffect(() => {
+    listWorkspaces().then((v) => {
+      setWorkspaces(v);
+    });
+  }, []);
 
   const gridCols =
     leftOpen && rightOpen
-      ? "lg:grid-cols-[260px_1fr_320px]"
+      ? "lg:grid-cols-[350px_1fr_500px]"
       : leftOpen && !rightOpen
-        ? "lg:grid-cols-[260px_1fr_0px]"
+        ? "lg:grid-cols-[350px_1fr_0px]"
         : !leftOpen && rightOpen
-          ? "lg:grid-cols-[0px_1fr_320px]"
+          ? "lg:grid-cols-[0px_1fr_500px]"
           : "lg:grid-cols-[0px_1fr_0px]";
 
   return (
-    <main className="h-[100dvh] w-full overflow-hidden">
+    <main className="h-screen w-full">
       {/* 3-열 레이아웃: 좌 260px, 중간 1fr, 우 320px (토글 시 0px로 축소) */}
-      <div
-        className={`grid h-full grid-rows-[auto_1fr] lg:grid-rows-1 ${gridCols}`}
-      >
+      <div className="flex flex-row h-full">
         {/* 모바일 상단 바 */}
         <header className="flex items-center gap-2 px-4 py-3 border-b lg:hidden">
           <h1 className="text-base font-semibold">Chat Workspace</h1>
@@ -135,7 +153,7 @@ export default function Page() {
 
         {/* 왼쪽 사이드바 */}
         <aside
-          className={`hidden border-r lg:block transition-[opacity] duration-200 ${
+          className={`hidden min-w-[350px] border-r lg:block transition-[opacity] duration-200 ${
             leftOpen ? "" : "opacity-0 pointer-events-none"
           }`}
           aria-hidden={!leftOpen}
@@ -144,25 +162,29 @@ export default function Page() {
           <Sidebar
             collapsed={!leftOpen}
             onToggle={() => setLeftOpen((v) => !v)}
-            workSpaces = {workSpaces}
+            workSpaces={workSpaces}
             // ★ 사이드바에서 토픽 선택/새토픽 준비 시 호출
             onSelectWorkspace={setActiveUuid}
           />
         </aside>
 
         {/* 가운데 채팅 패널 */}
-        <section className="min-w-0">
+        <section className="min-w-0 h-full flex-1">
           <ChatPanel
             // workspaceUuid={selectedWs}
             // onWorkspaceCreated={(newUuid) => setSelectedWs(newUuid)} // 최초 생성 후 선택
-            messages = {workSpace=== null ? []: workSpace.chat_history.messages}
-            sendMessage = {sendMessage}
+            messages={workSpace === null ? [] : workSpace.chat_history.messages}
+            sendMessage={sendMessage}
           />
         </section>
 
         {/* 오른쪽 파일 패널 (원하시면 동일한 방식으로 토글) */}
-        <aside className="hidden border-l lg:block min-h-0">
-          <RightPane publications={workSpace === null ? []: workSpace.chat_history.queries} />
+        <aside className="hidden border-l lg:block h-full w-[500px]">
+          <RightPane
+            publications={
+              workSpace === null ? [] : workSpace.chat_history.queries
+            }
+          />
         </aside>
       </div>
     </main>

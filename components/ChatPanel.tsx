@@ -22,15 +22,13 @@ type Msg = { role: "user" | "ai" | "sys"; msg: string };
 type ChatPanelProps = {
   // workspaceUuid: string | null; // null이면 새로 만들 모드
   // onWorkspaceCreated?: (uuid: string) => void;
-  uuid: string | null,
   messages: MessageT[]
-  sendMessage: (msg: string, uuid: string | null) => void
+  sendMessage: (msg: string) => void
 };
 
 export default function ChatPanel({
   // workspaceUuid,
   // onWorkspaceCreated,
-  uuid,
   messages, 
   sendMessage
 }: ChatPanelProps) {
@@ -120,7 +118,7 @@ export default function ChatPanel({
   //             // tool call invoke
   //           }
   //         },
-  //         onRecord: (name, uuid) => {
+  //         onRecord: (name, uuid) => {ch
   //           console.log(
   //             `@@@@@ onRecord Invoked / name: ${name}, uuid: ${uuid}`
   //           );
@@ -182,7 +180,7 @@ export default function ChatPanel({
       </div>
 
       {/* 채팅 히스토리 영역 */}
-      <div ref={scrollRef} className="flex-1 overflow-auto p-4">
+      <div ref={scrollRef} className="h-full overflow-auto p-4">
         <div className="mx-auto max-w-3xl space-y-3">
           {messages.map((m, i) => {
             const cls =
@@ -235,12 +233,12 @@ export default function ChatPanel({
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault(); // 줄바꿈 방지
-                sendMessage(input, uuid);
+                sendMessage(input);
               }
             }}
             // isDisabled={loading}
           />
-          <Button color="primary" onPress={() => sendMessage(input, uuid)} >
+          <Button color="primary" onPress={() => sendMessage(input)} >
             {/* {loading ? "Sending..." : "Send"} */}
             Send
           </Button>
