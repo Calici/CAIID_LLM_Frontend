@@ -161,16 +161,26 @@ export type LlmServerConfig = {
   api_url: string;
 };
 
+export type ServerPayload = {
+  username: string, name: string, model_name: string, api_url: string, api_key: string
+}
+
+export type ServerConfig = {
+  username: string | null,
+  name: string | null,
+  model_name: string | null,
+  api_url: string | null
+}
+
 /** [GET] /server : 현재 LLM 서버 설정 조회 */
-export async function getLlmServer(): Promise<LlmServerConfig> {
+export async function getLlmServer(): Promise<ServerConfig> {
   const res = await axiosInstance.get<LlmServerConfig>("/server");
   return res.data;
 }
 
 /** [POST] /server.update : LLM 추론 서버 설정 업데이트 */
-export async function updateLlmServer(payload: LlmServerConfig & { api_key: string }): Promise<LlmServerConfig> {
-  const res = await axiosInstance.post<LlmServerConfig>("/server.update", payload);
-  return res.data;
+export async function updateLlmServer(payload: ServerPayload): Promise<any> {
+  return await axiosInstance.post<Omit<ServerPayload, "">>("/server.update", payload);
 }
 
 /** 남은 wrapper : 	listWorkspaces()	GET	워크스페이스 목록 가져오기 #

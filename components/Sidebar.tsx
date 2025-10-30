@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Switch } from "@heroui/switch";
 import { useTheme } from "next-themes";
+import { Tabs, Tab } from "@heroui/tabs";
+import { Select, SelectItem } from "@heroui/select";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronDown,
@@ -14,6 +16,7 @@ import {
   faEyeSlash,
   faPen,
   faTrash,
+  faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   Modal,
@@ -28,8 +31,13 @@ import {
   deleteWorkspace,
   type WorkspaceSummary,
   getLlmServer,
+  updateLlmServer,
+  type LlmServerConfig,
+  ServerPayload,
+  ServerConfig,
 } from "@/app/api/wrappers";
 import { postChatStream } from "@/app/api/chatStream";
+import SafeButton from './safebutton/safebutton'
 
 const LS_KEY_OPENAI = "openai_api_key"; // OpenAI API KEY
 
@@ -57,7 +65,6 @@ export default function Sidebar({
   // const [createOpen, setCreateOpen] = useState(false); // "new topic" modal
 
   // Settings form state
-  const [apiKey, setApiKey] = useState(""); // Input value
   const [showKey, setShowKey] = useState(false); // Bool For OpenAI Key Show or not
   const [errorMsg, setErrorMsg] = useState(""); // Validation Message
   const [saved, setSaved] = useState(false); // show saved Feedback
@@ -130,12 +137,6 @@ export default function Sidebar({
   //──────────────────────────────────────────────────────────────────────────
 
   useEffect(() => setIsMounted(true), []);
-  useEffect(() => {
-    // SSR 보호: window가 없을 수 있으니 가드
-    if (typeof window === "undefined") return;
-    const existing = localStorage.getItem(LS_KEY_OPENAI);
-    if (existing) setApiKey(existing);
-  }, []);
 
   // Mount: initial workspace list
   // useEffect(() => {
@@ -150,50 +151,7 @@ export default function Sidebar({
 
   //──────────────────────────────────────────────────────────────────────────
   // Handlers
-  //──────────────────────────────────────────────────────────────────────────
-  const handleSave = () => {
-    const k = apiKey.trim();
-
-    // 1) 간단 검증
-    if (!k) {
-      setErrorMsg("Please enter your OpenAI API key.");
-      setSaved(false);
-      return;
-    }
-    if (!k.startsWith("sk-")) {
-      setErrorMsg("The key should start with 'sk-'.");
-      setSaved(false);
-      return;
-    }
-
-    // 2) 저장
-    try {
-      localStorage.setItem(LS_KEY_OPENAI, k);
-      setErrorMsg("");
-      setSaved(true);
-      showToast("success", "Saved API Key Successfully..");
-      window.setTimeout(() => {
-        setSaved(false);
-        setSettingsOpen(false);
-      }, 400);
-      // 3) 잠시 후 'Saved' 배지 숨기기 (선택)
-      setTimeout(() => setSaved(false), 1500);
-    } catch (e) {
-      const msg = getErrMsg(e);
-      setErrorMsg(
-        `Failed to save the key. Check your browser settings. : ${msg}`
-      );
-      setSaved(false);
-      showToast("error", `failed to save : ${msg}`);
-    }
-  };
-
-  const handleClear = () => {
-    localStorage.removeItem(LS_KEY_OPENAI);
-    setApiKey("");
-    setErrorMsg("");
-    setSaved(false);
-  };
+  //─────────────────────────────────────────────────────────────────────────
 
   // async function handleCreateByChat(onClose: () => void) {
   //   if (isCreating) return;
@@ -225,6 +183,86 @@ export default function Sidebar({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
+
+  //──────────────────────────────────────────────────────────────────────────
+  // LLM Server Update settings
+  //──────────────────────────────────────────────────────────────────────────
+
+  const [server, setServer] = useState<LlmServerConfig | null>(null);
+
+  //──────────────────────────────────────────────────────────────────────────
+  // LLM Server Update settings Modal status
+  //──────────────────────────────────────────────────────────────────────────
+  type Mode = "lite" | "heavy";
+
+  const [config, setConfig] = useState<
+    ServerConfig & { api_key: string | null }
+  >({
+    username: null,
+    name: null,
+    model_name: null,
+    api_url: null,
+    api_key: null,
+  });
+  const [mode, __setMode] = useState<Mode>("heavy");
+  const DEFAULT_OPENAI_URL = "https://api.openai.com/v1";
+
+  const MODEL_OPTIONS = [
+    { label: "GPT-5", value: "gpt-5" },
+    { label: "GPT-5-mini", value: "gpt-5-mini" },
+    { label: "GPT-5-pro", value: "gpt-5-pro" },
+    { label: "GPT-5-nano", value: "gpt-5-nano" },
+    { label: "gpt-4o-mini", value: "gpt-4o-mini" },
+  ];
+  // check if all empty
+  const isEmptyConfig = (cfg?: Partial<LlmServerConfig> | null) =>
+    !cfg || (!cfg.username && !cfg.name && !cfg.model_name && !cfg.api_url);
+
+  // 프로그램 시작 시 서버 설정을 받아와 폼에 주입, 전부 null/빈값이면 모달 자동 오픈
+  useEffect(() => {
+    getLlmServer().then((config) => {
+      setConfig({ ...config, api_key: null });
+    });
+  }, []);
+
+  const setMode = React.useCallback((mode: Mode) => {
+    if (mode === "lite") {
+      setConfig((prevConfig) => ({ ...prevConfig, api_url: DEFAULT_OPENAI_URL, api_key: null, model_name: "gpt-5-nano"}))
+      __setMode("lite")
+    }
+    else {
+      setConfig((prevConfig) => ({ ...prevConfig, api_url: null, api_key: null}))
+      __setMode("heavy")
+    }
+  }, [])
+
+  // Save Button Handler
+  const handleServerSave = (onClose: () => void) => {
+    // 서버 규격상 username, name은 기존 서버 응답에서 재사용
+    let { name, username, model_name, api_url, api_key } = config;
+    if (
+      name === null ||
+      username === null ||
+      model_name === null ||
+      api_url === null ||
+      api_key === null
+    ) {
+      return Promise.resolve(null);
+    }
+    api_url = api_url.trim();
+    username = username.trim();
+    name = name.trim();
+    if (api_url.length === 0 || username.length === 0) {
+      return Promise.resolve(null);
+    }
+    return updateLlmServer({
+      name,
+      username,
+      model_name,
+      api_url,
+      api_key,
+    }).then(onClose);
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -400,10 +438,86 @@ export default function Sidebar({
             <>
               <ModalHeader className="text-sm">Settings</ModalHeader>
               <ModalBody>
-                <p className="text-sm">
-                  This modal handles Settings for the system.
-                </p>
                 <Input
+                  placeholder="John Doe"
+                  type="text"
+                  startContent={<FontAwesomeIcon icon={faUser} />}
+                  value={config.username || undefined}
+                  onValueChange={(v) =>
+                    setConfig((prevConfig) => ({ ...prevConfig, username: v }))
+                  }
+                />
+                {/* <div className="flex items-center justify-between">
+                  <span className="text-sm">Lite mode</span>
+                  <Switch
+                    size="sm"
+                    isSelected={liteMode}
+                    onValueChange={setLiteMode}
+                    aria-label="Toggle Lite mode"
+                  />
+                </div> */}
+                <Tabs
+                  selectedKey={mode}
+                  fullWidth
+                  onSelectionChange={(k) => {
+                    if (k === "lite") setMode("lite");
+                    else setMode("heavy");
+                  }}
+                >
+                  <Tab key="lite" title="Lite" />
+                  <Tab key="heavy" title="Heavy" />
+                </Tabs>
+
+                {/* 3-1. 모델명 (Lite ON일 때만 선택 가능) */}
+                <div
+                  className="mt-3 aria-hidden:hidden"
+                  aria-hidden={mode === "heavy"}
+                >
+                  <Select
+                    className="aria-hidden:hidden"
+                    aria-hidden={mode === "heavy"}
+                    selectedKeys={
+                      config.model_name === null ? [] : [config.model_name]
+                    }
+                    onSelectionChange={(k) => {
+                      const { currentKey } = k
+                      if (currentKey !== undefined&& currentKey.length !== 0) {
+                        setConfig((prevConfig) => ({ ...prevConfig, model_name: currentKey}))
+                      }
+                    }}
+                  >
+                    {MODEL_OPTIONS.map((option) => (
+                      <SelectItem key={option.value}>{option.label}</SelectItem>
+                    ))}
+                  </Select>
+                </div>
+                {/* 3-3. API URL */}
+                <div className="">
+                  <Input
+                    label="API URL"
+                    placeholder="https://llm.example.com/v1"
+                    variant="bordered"
+                    value={config.api_url || undefined}
+                    onValueChange={(v) =>
+                      setConfig((prevConfig) => ({ ...prevConfig, api_url: v }))
+                    }
+                  />
+                </div>
+                {/* 3-2. API key */}
+                <div className="">
+                  <Input
+                    label="API Key"
+                    placeholder="sk-**************************"
+                    variant="bordered"
+                    type="password"
+                    value={config.api_key || undefined}
+                    onValueChange={(v) =>
+                      setConfig((prevConfig) => ({ ...prevConfig, api_key: v }))
+                    }
+                  />
+                </div>
+
+                {/* <Input
                   label="OpenAI API Key"
                   placeholder="sk-**************************"
                   variant="bordered"
@@ -434,8 +548,8 @@ export default function Sidebar({
                       />
                     </Button>
                   }
-                />
-                {saved && <p className="text-xs text-success">Saved ✓</p>}
+                /> */}
+                {/* {saved && <p className="text-xs text-success">Saved ✓</p>} */}
                 {isMounted && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Dark mode</span>
@@ -449,16 +563,20 @@ export default function Sidebar({
                 )}
               </ModalBody>
               <ModalFooter>
-                <Button color="danger" onPress={handleClear}>
+                {/* <Button color="danger" onPress={handleClear}>
                   Clear
-                </Button>
+                </Button> */}
                 <Button color="default" onPress={onClose}>
                   Close
                 </Button>
-                <Button color="primary" onPress={handleSave}>
+                <SafeButton
+                  color="primary"
+                  onPress={() => handleServerSave(onClose)}
+                >
                   Save
-                </Button>
+                </SafeButton>
                 <Button
+                  color="warning"
                   onPress={async () => {
                     try {
                       const serverInfo = await getLlmServer();
@@ -468,7 +586,7 @@ export default function Sidebar({
                     }
                   }}
                 >
-                  TestCur
+                  (Test) get Current LLM
                 </Button>
               </ModalFooter>
             </>
