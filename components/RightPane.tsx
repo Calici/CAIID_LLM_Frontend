@@ -9,7 +9,7 @@ import { PublicationT } from '@/app/api/chatStream';
 
 function PublicationItem(publication: PublicationT) {
   return (
-    <div className="w-full h-full border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div className="w-full border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="space-y-2">
         {/* Title */}
         {publication.link ? (
@@ -55,12 +55,12 @@ export default function RightPane({ publications }: RightPaneT) {
 
 
   return (
-    <div className="h-full grid grid-rows"> 
+    <div className="h-full flex flex-col max-h-full"> 
       {/* ↑ 위쪽 고정 높이(예: 260px). 필요 시 조정/리사이저 추가 가능 */}
-      <div className="border-b min-h-0">
+      <div className="border-b h-3/4 overflow-auto">
         {publications.map((p) => <PublicationItem {...p} />)}
       </div>
-      <div className="min-h-0">
+      <div className="h-1/4">
         {/* FilesPanel은 기존 그대로 사용 */}
         <FilesPanel /* topicId={...} api={...}  */ />
       </div>

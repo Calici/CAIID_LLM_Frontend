@@ -52,7 +52,7 @@ export type Workspace = {
   //use for createWorkSpace() and getWorkSpace()
   name: string;
   uuid: string;
-  chat_history: MessageT[];
+  chat_history: StateT[];
   last_modified: string;
   create_date: string;
 };

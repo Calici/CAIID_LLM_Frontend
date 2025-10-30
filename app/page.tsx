@@ -13,15 +13,105 @@ import Sidebar from "@/components/Sidebar";
 import ChatPanel from "@/components/ChatPanel";
 import RightPane from "@/components/RightPane";
 import FilesPanel from "@/components/FilesPanel";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import React from "react";
 import MarkdownTest from "@/components/MarkdownTest";
+import { getWorkspace, listWorkspaces, Workspace } from "./api/wrappers";
+import { postChatStream } from "./api/chatStream";
+
+function useWorkspace(
+  uuid: string | null,
+  appendUuid: (name: string, uuid: string) => void
+) {
+  const [workSpace, setWorkSpace] = useState<Workspace | null>(null);
+  useEffect(() => {
+    if (uuid === null) {
+      setWorkSpace(null);
+      return;
+    }
+    getWorkspace(uuid).then((workSpace) => setWorkSpace(workSpace));
+  }, [uuid]);
+  const sendMessage = React.useCallback(
+    (msg: string) => {
+      postChatStream(
+        { user_prompt: msg, uuid: uuid === null ? undefined : uuid },
+        {
+          onChat: (v) => {
+            setWorkSpace((prevWorkspace) => {
+              if (prevWorkspace === null) return null;
+              const messages = prevWorkspace.chat_history.messages.slice();
+              const lastMessage = prevWorkspace.chat_history.messages.slice(-1)[0];
+              if (lastMessage.type === "ai" && v.type === "ai") {
+                messages.splice(messages.length - 1, 1)
+                messages.push({type: "ai", content: lastMessage.content + v.content})
+              } else if (
+                v.type === "tool_call" &&
+                lastMessage.type === "tool_call" &&
+                v.tool_call_id === lastMessage.tool_call_id
+              ) {
+                messages.splice(messages.length - 1, 1)
+                messages.push({
+                  ...lastMessage, is_complete: v.is_complete
+                })
+              } else {
+                messages.push(v);
+              }
+              return {
+                ...prevWorkspace,
+                chat_history: {
+                  ...prevWorkspace.chat_history,
+                  messages,
+                },
+              };
+            });
+          },
+          onRecord: (name, uuid) => {
+            appendUuid(name, uuid);
+          },
+          onQuery: (v) => {
+            setWorkSpace((prevWorkspace) => {
+              if (prevWorkspace === null) return null;
+              return {
+                ...prevWorkspace,
+                chat_history: {
+                  ...prevWorkspace.chat_history,
+                  queries: v,
+                },
+              };
+            });
+          },
+        }
+      );
+    },
+    [uuid]
+  );
+  return { workSpace, sendMessage}
+}
 
 export default function Page() {
   const [leftOpen, setLeftOpen] = useState(true); // 왼쪽 사이드바 열림/닫힘
   const [rightOpen, setRightOpen] = useState(true); // 오른쪽 파일 패널 열림/닫힘
-  
+
   // ★ 현재 선택된 워크스페이스
   const [selectedWs, setSelectedWs] = useState<string | null>(null);
+  
+  const [workSpaces, setWorkspaces] = useState<{ name: string, uuid: string }[]> ([])
+
+  const [activeUuid, setActiveUuid] = useState<string | null>(null)
+  const appendUuid = React.useCallback((name: string, uuid: string) => {
+    setWorkspaces((prevWorkspaces) => [{ name, uuid}, ...prevWorkspaces])
+    setActiveUuid(uuid)
+  }, [ ])
+  const { 
+    workSpace, sendMessage
+  } = useWorkspace(activeUuid, appendUuid)
+
+  useEffect(()=> {
+    listWorkspaces().then((v)=>{
+      setWorkspaces(v)
+    })
+  }, [])
+
 
   const gridCols =
     leftOpen && rightOpen
@@ -53,23 +143,26 @@ export default function Page() {
           {/* Sidebar에 collapsed/onToggle 전달 */}
           <Sidebar
             collapsed={!leftOpen}
-            onToggle={() => setLeftOpen(v => !v)}
+            onToggle={() => setLeftOpen((v) => !v)}
+            workSpaces = {workSpaces}
             // ★ 사이드바에서 토픽 선택/새토픽 준비 시 호출
-            onSelectWorkspace={(uuid) => setSelectedWs(uuid)}
+            onSelectWorkspace={setActiveUuid}
           />
         </aside>
 
         {/* 가운데 채팅 패널 */}
         <section className="min-w-0">
           <ChatPanel
-            workspaceUuid={selectedWs}
-            onWorkspaceCreated={(newUuid) => setSelectedWs(newUuid)} // 최초 생성 후 선택
+            // workspaceUuid={selectedWs}
+            // onWorkspaceCreated={(newUuid) => setSelectedWs(newUuid)} // 최초 생성 후 선택
+            messages = {workSpace=== null ? []: workSpace.chat_history.messages}
+            sendMessage = {sendMessage}
           />
         </section>
 
         {/* 오른쪽 파일 패널 (원하시면 동일한 방식으로 토글) */}
         <aside className="hidden border-l lg:block">
-          <RightPane publications = {[]}/>
+          <RightPane publications={workSpace === null ? []: workSpace.chat_history.queries} />
         </aside>
       </div>
     </main>

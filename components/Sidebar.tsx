@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Switch } from "@heroui/switch";
@@ -35,15 +35,21 @@ const LS_KEY_OPENAI = "openai_api_key"; // OpenAI API KEY
 type SidebarProps = {
   collapsed?: boolean;
   onToggle?: () => void; // parent toggles left pane, Not using now
-  onSelectWorkspace?: (uuid: string | null) => void; // ★ 추가
+  onSelectWorkspace: (uuid: string | null) => void; // ★ 추가
+  workSpaces: WorkspaceSummary[]
 };
 
-export default function Sidebar({ collapsed = false, onToggle, onSelectWorkspace }: SidebarProps) {
+export default function Sidebar({
+  collapsed = false,
+  onToggle,
+  onSelectWorkspace,
+  workSpaces
+}: SidebarProps) {
   //──────────────────────────────────────────────────────────────────────────
   // UI state (settings & dialogs)
   //──────────────────────────────────────────────────────────────────────────
   const [settingsOpen, setSettingsOpen] = useState(false); // Modal open/close
-  const [createOpen, setCreateOpen] = useState(false); // "new topic" modal
+  // const [createOpen, setCreateOpen] = useState(false); // "new topic" modal
 
   // Settings form state
   const [apiKey, setApiKey] = useState(""); // Input value
@@ -62,28 +68,28 @@ export default function Sidebar({ collapsed = false, onToggle, onSelectWorkspace
   } | null>(null);
 
   // new topic modal input
-  const [draftName, setDraftName] = useState(""); // Input for newTopicModal
+  //const [draftName, setDraftName] = useState(""); // Input for newTopicModal
 
   // Theme
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [isMounted, setIsMounted] = useState(false); // for dark mode toggle
 
   //──────────────────────────────────────────────────────────────────────────
-  // Data state (workspaces) + async flags
+  // Data state (workSpaces) + async flags
   //──────────────────────────────────────────────────────────────────────────
-  const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
+  // const [workSpaces, setworkSpaces] = useState<workSpacesummary[]>([]);
   //{ name: string; uuid: string }
   const [isLoading, setIsLoading] = useState(false);
-  const [isCreating, setIsCreating] = useState(false); // checks if creating is in progress or not, prevents double creation
+  //const [isCreating, setIsCreating] = useState(false); // checks if creating is in progress or not, prevents double creation
   const [loadErrorMsg, setLoadErrorMsg] = useState<string | null>(null);
 
   const filtered = useMemo(
     // Search topics feature
     () =>
-      workspaces.filter((w) =>
+      workSpaces.filter((w) =>
         w.name.toLowerCase().includes(filter.toLowerCase())
       ),
-    [workspaces, filter]
+    [workSpaces, filter]
   );
 
   //──────────────────────────────────────────────────────────────────────────
@@ -101,19 +107,19 @@ export default function Sidebar({ collapsed = false, onToggle, onSelectWorkspace
         ? e
         : "Unknown error"; // Error message display
 
-  // Fetch list
-  const fetchWorkspaces = useCallback(async () => {
-    setIsLoading(true);
-    setLoadErrorMsg(null);
-    try {
-      const data = await listWorkspaces();
-      setWorkspaces(data);
-    } catch (e) {
-      setLoadErrorMsg(getErrMsg(e));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // // Fetch list
+  // const fetchworkSpaces = useCallback(async () => {
+  //   setIsLoading(true);
+  //   setLoadErrorMsg(null);
+  //   try {
+  //     const data = await listworkSpaces();
+  //     setworkSpaces(data);
+  //   } catch (e) {
+  //     setLoadErrorMsg(getErrMsg(e));
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // }, []);
   //──────────────────────────────────────────────────────────────────────────
   // Effects
   //──────────────────────────────────────────────────────────────────────────
@@ -127,15 +133,15 @@ export default function Sidebar({ collapsed = false, onToggle, onSelectWorkspace
   }, []);
 
   // Mount: initial workspace list
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      await fetchWorkspaces();
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [fetchWorkspaces]);
+  // useEffect(() => {
+  //   let alive = true;
+  //   (async () => {
+  //     await f();
+  //   })();
+  //   return () => {
+  //     alive = false;
+  //   };
+  // }, [fetchworkSpaces]);
 
   //──────────────────────────────────────────────────────────────────────────
   // Handlers
@@ -184,30 +190,30 @@ export default function Sidebar({ collapsed = false, onToggle, onSelectWorkspace
     setSaved(false);
   };
 
-  async function handleCreateByChat(onClose: () => void) {
-    if (isCreating) return;
-    setIsCreating(true);
-    try {
-      await postChatStream(
-        { user_prompt: draftName.trim() || "New workspace" }, // uuid 없음 → 새로 생성
-        {
-          // 가볍게 끝만 받을 경우
-          onEnd: async () => {
-            // 서버에서 생성이 완료되면 목록을 다시 가져와 사이드바 갱신
-            const data = await listWorkspaces();
-            setWorkspaces(data);
-            onClose();
-            showToast("success", "Workspace created via chat.");
-          },
-          onError: (e) => {
-            showToast("error", e instanceof Error ? e.message : String(e));
-          },
-        }
-      );
-    } finally {
-      setIsCreating(false);
-    }
-  }
+  // async function handleCreateByChat(onClose: () => void) {
+  //   if (isCreating) return;
+  //   setIsCreating(true);
+  //   try {
+  //     await postChatStream(
+  //       { user_prompt: draftName.trim() || "New workspace" }, // uuid 없음 → 새로 생성
+  //       {
+  //         // 가볍게 끝만 받을 경우
+  //         onEnd: async () => {
+  //           // 서버에서 생성이 완료되면 목록을 다시 가져와 사이드바 갱신
+  //           const data = await listworkSpaces();
+  //           setworkSpaces(data);
+  //           onClose();
+  //           showToast("success", "Workspace created via chat.");
+  //         },
+  //         onError: (e) => {
+  //           showToast("error", e instanceof Error ? e.message : String(e));
+  //         },
+  //       }
+  //     );
+  //   } finally {
+  //     setIsCreating(false);
+  //   }
+  // }
   //──────────────────────────────────────────────────────────────────────────
   // Remove / Delete topics
   //──────────────────────────────────────────────────────────────────────────
@@ -248,14 +254,12 @@ export default function Sidebar({ collapsed = false, onToggle, onSelectWorkspace
             className="w-full"
             variant="flat"
             onPress={() => {
-              setDraftName("");
-              // createOpen 모달도 생략 가능 (원하시면 남겨두고 라벨만 바꾸세요)
-              // 모달 없이 바로 새 대화 준비:
-              onSelectWorkspace?.(null);
+              console.log(`clicked, `, onSelectWorkspace);
+              setFilter("");
+              onSelectWorkspace(null);
             }}
-            isDisabled={isCreating} // 중복 클릭 방지용
           >
-            {isCreating ? "Creating..." : "New topic"}
+            New topic
           </Button>
         </div>
       </div>
@@ -282,7 +286,7 @@ export default function Sidebar({ collapsed = false, onToggle, onSelectWorkspace
                     className="flex-1"
                     autoFocus
                   />
-                  <Button
+                  {/* <Button
                     size="sm"
                     color="primary"
                     isDisabled={!renameDraft.trim()}
@@ -291,7 +295,7 @@ export default function Sidebar({ collapsed = false, onToggle, onSelectWorkspace
                         name: renameDraft.trim(),
                       });
                       // 빠른 UX: 낙관적 반영
-                      setWorkspaces((prev) =>
+                      setworkSpaces((prev) =>
                         prev.map((x) =>
                           x.uuid === w.uuid
                             ? { ...x, name: renameDraft.trim() }
@@ -300,11 +304,11 @@ export default function Sidebar({ collapsed = false, onToggle, onSelectWorkspace
                       );
                       setEditingId(null);
                       setRenameDraft("");
-                      // 필요 시 재조회: await fetchWorkspaces();
+                      // 필요 시 재조회: await fetchworkSpaces();
                     }}
                   >
                     Save
-                  </Button>
+                  </Button> */}
                   <Button
                     size="sm"
                     variant="light"
@@ -468,21 +472,21 @@ export default function Sidebar({ collapsed = false, onToggle, onSelectWorkspace
                 <Button color="default" onPress={onClose}>
                   Cancel
                 </Button>
-                <Button
+                {/* <Button
                   color="danger"
                   onPress={async () => {
                     if (!deletingId) return;
                     await deleteWorkspace(deletingId);
                     // 낙관적 제거
-                    setWorkspaces((prev) =>
+                    setworkSpaces((prev) =>
                       prev.filter((x) => x.uuid !== deletingId)
                     );
                     setDeletingId(null);
-                    await fetchWorkspaces();
+                    await fetchworkSpaces();
                   }}
                 >
                   Delete
-                </Button>
+                </Button> */}
               </ModalFooter>
             </>
           )}
