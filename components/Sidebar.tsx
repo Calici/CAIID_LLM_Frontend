@@ -258,7 +258,6 @@ export default function Sidebar({
             className="w-full"
             variant="flat"
             onPress={() => {
-              console.log(`clicked, `, onSelectWorkspace);
               setFilter("");
               onSelectWorkspace(null);
             }}
@@ -485,6 +484,7 @@ export default function Sidebar({
                     // 낙관적 제거
                       setWorkspaces(prev => prev.filter(x => x.uuid !== deletingId));
                     setDeletingId(null);
+                    onSelectWorkspace(null);
                   }}
                 >
                   Delete
