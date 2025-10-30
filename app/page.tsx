@@ -161,7 +161,7 @@ export default function Page() {
         </section>
 
         {/* 오른쪽 파일 패널 (원하시면 동일한 방식으로 토글) */}
-        <aside className="hidden border-l lg:block">
+        <aside className="hidden border-l lg:block min-h-0">
           <RightPane publications={workSpace === null ? []: workSpace.chat_history.queries} />
         </aside>
       </div>

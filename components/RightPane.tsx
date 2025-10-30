@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import QueryPanel from "@/components/QueryPanel";
 import FilesPanel from "@/components/FilesPanel";
 import type { QueryFields } from "@/types/query";
-import { PublicationT } from '@/app/api/chatStream';
+import { PublicationT } from "@/app/api/chatStream";
 
 function PublicationItem(publication: PublicationT) {
   return (
@@ -13,7 +13,7 @@ function PublicationItem(publication: PublicationT) {
       <div className="space-y-2">
         {/* Title */}
         {publication.link ? (
-          <a 
+          <a
             href={publication.link}
             target="_blank"
             rel="noopener noreferrer"
@@ -26,17 +26,15 @@ function PublicationItem(publication: PublicationT) {
             {publication.title}
           </h3>
         )}
-        
+
         {/* Authors */}
         <p className="text-sm text-gray-600">
-          {publication.authors.join(', ')}
+          {publication.authors.join(", ")}
         </p>
-        
+
         {/* Source */}
-        <p className="text-sm italic text-gray-500">
-          {publication.source}
-        </p>
-        
+        <p className="text-sm italic text-gray-500">{publication.source}</p>
+
         {/* Abstract */}
         {publication.abstract && (
           <p className="text-sm text-gray-700 line-clamp-3">
@@ -49,18 +47,18 @@ function PublicationItem(publication: PublicationT) {
 }
 /** 우측 패널: 위 Query, 아래 File s */
 export type RightPaneT = {
-  publications: PublicationT[]
-}
+  publications: PublicationT[];
+};
 export default function RightPane({ publications }: RightPaneT) {
-
-
   return (
-    <div className="h-full flex flex-col max-h-full"> 
+    <div className="h-full flex flex-col min-h-0">
       {/* ↑ 위쪽 고정 높이(예: 260px). 필요 시 조정/리사이저 추가 가능 */}
-      <div className="border-b h-3/4 overflow-auto">
-        {publications.map((p) => <PublicationItem {...p} />)}
+      <div className="border-b flex-[3] min-h-0 overflow-auto">
+        {publications.map((p) => (
+          <PublicationItem {...p} />
+        ))}
       </div>
-      <div className="h-1/4">
+      <div className="flex-1 min-h-0">
         {/* FilesPanel은 기존 그대로 사용 */}
         <FilesPanel /* topicId={...} api={...}  */ />
       </div>
