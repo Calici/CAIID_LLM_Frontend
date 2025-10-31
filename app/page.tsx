@@ -226,7 +226,7 @@ export default function Page() {
     getLlmServer().then((config) => {
       setServerConfig(config);
       const haveNull = Object.values(config).reduce(
-        (prev, cur) => prev && cur === null,
+        (prev, cur) => prev || cur === null,
         false,
       );
       if (haveNull) {

@@ -84,7 +84,7 @@ export default function ConfigEditor({
       }
       setMode(nextMode);
     },
-    [setApiKey, setApiUrl, setModelName, setMode],
+    [setApiKey, setApiUrl, setModelName, setMode]
   );
 
   const validate = useCallback(() => {
@@ -154,7 +154,7 @@ export default function ConfigEditor({
         model_name: trimmedModelName,
         api_url: trimmedApiUrl,
         api_key: trimmedKey,
-      }),
+      })
     ).then(() => {
       setApiKey("");
       onClose();
@@ -165,7 +165,7 @@ export default function ConfigEditor({
     (key: Key) => {
       handleModeChange(key === "lite" ? "lite" : "heavy");
     },
-    [handleModeChange],
+    [handleModeChange]
   );
 
   return (
@@ -196,6 +196,11 @@ export default function ConfigEditor({
                 <Tabs
                   selectedKey={mode}
                   onSelectionChange={handleModeSelection}
+                  color="primary"
+                  variant="solid"
+                  classNames={{
+                    tab: "h-8 px-3 data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground",
+                  }}
                 >
                   <Tab key="lite" title="Lite" />
                   <Tab key="heavy" title="Heavy" />
