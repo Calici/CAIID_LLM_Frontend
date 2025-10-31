@@ -68,7 +68,7 @@ export default function ConfigEditor({
 
   useEffect(() => {
     setUsername(defaultConfig.username || "");
-    setModelName(defaultConfig.model_name || "");
+    setModelName(defaultConfig.model_name || "gpt-5-nano");
     setApiUrl(defaultConfig.api_url || "");
   }, [defaultConfig]);
 
@@ -79,6 +79,7 @@ export default function ConfigEditor({
         setModelName("gpt-5-nano");
         setApiKey("");
       } else {
+        setModelName("gpt-5-nano");
         setApiUrl("");
         setApiKey("");
       }
