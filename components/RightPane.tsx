@@ -10,7 +10,7 @@ import { Tabs, Tab } from "@heroui/tabs";
 
 function PublicationItem(publication: PublicationT) {
   return (
-    <div className="w-full border border-surface-strong bg-sky-50 rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div className="w-full border border-divider bg-content1 rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="space-y-2">
         {/* Title */}
         {publication.link ? (
@@ -18,7 +18,7 @@ function PublicationItem(publication: PublicationT) {
             href={publication.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-lg font-semibold text-primary-400 hover:underline block"
+            className="text-lg font-semibold text-foreground hover:underline block"
           >
             {publication.title}
           </a>
@@ -29,12 +29,12 @@ function PublicationItem(publication: PublicationT) {
         )}
 
         {/* Authors */}
-        <p className="text-sm text-muted-400">
+        <p className="text-sm text-default-500">
           {publication.authors.join(", ")}
         </p>
 
         {/* Source */}
-        <p className="text-sm italic text-muted-500">{publication.source}</p>
+        <p className="text-sm text-default-500">{publication.source}</p>
 
         {/* Abstract */}
         {publication.abstract && (
