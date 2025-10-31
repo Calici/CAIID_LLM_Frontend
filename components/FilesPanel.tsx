@@ -81,7 +81,8 @@ export default function FilesPanel() {
     return fsConfirmUpload(uuid, { name: uploadedFileName, summary })
       .then(() => {
         fetchFiles();
-        onClose()
+        onClose();
+        handleClear();
       })
       .catch((e) => {
         if (e?.response?.status === 409 || e?.status === 409) {
