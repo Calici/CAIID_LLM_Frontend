@@ -5,7 +5,7 @@ console.log("[axios] BASE_URL =", BASE_URL); // ← 임시로그
 // 기본 axios 인스턴스 생성
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000, // 10초 제한
+  timeout: 300000, // 30초 제한
   headers: {
     "Content-Type": "application/json",
   },

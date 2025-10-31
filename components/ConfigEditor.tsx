@@ -112,7 +112,7 @@ export default function ConfigEditor({
       hasError = true;
       setApiUrlErrors(["API URL cannot be empty."]);
     }
-    if (!trimmedKey) {
+    if (mode === "lite" && !trimmedKey) {
       hasError = true;
       setApiKeyErrors(["API key is required."]);
     }
