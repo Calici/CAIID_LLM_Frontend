@@ -10,7 +10,7 @@ import { Tabs, Tab } from "@heroui/tabs";
 
 function PublicationItem(publication: PublicationT) {
   return (
-    <div className="w-full border border-surface-strong bg-surface-muted rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div className="w-full border border-surface-strong bg-sky-50 rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="space-y-2">
         {/* Title */}
         {publication.link ? (
@@ -65,27 +65,29 @@ export default function RightPane({ publications }: RightPaneT) {
   }, [publications]);
 
   const firstKey = grouped[0]?.[0] ?? "All";
-  const [active, setActive] = useState<string>(firstKey);
+  const [active, setActive] = useState<string | null>(firstKey);
+
+    useEffect(() => {
+    if (grouped.length === 0) {
+      setActive(null);
+      return;
+    }
+    const keys = grouped.map(([k]) => k);
+    if (!active || !keys.includes(active)) {
+      setActive(keys[0]); // 첫 번째 탭 자동 선택
+    }
+  }, [grouped, active]);
 
   return (
     <div className="h-full flex flex-col min-h-0">
-      {/* <div className="flex flex-row items-center gap-3 p-3 border-b justify-between w-full">
-        <p className="font-semibold">Publications</p>
-      </div> */}
-
-      {/* <div className="border-b h-2/3 overflow-auto">
-        {publications.map((p,i) => (
-          <PublicationItem key={i} {...p} />
-        ))}
-      </div> */}
 
       {/* 2) Tabs 영역 */}
-      <div className="flex-1 border-b h-2/3 overflow-auto">
+      <div className="flex-1 flex-col flex border-b h-2/3 overflow-hidden">
         {grouped.length === 0 ? (
           <div className="p-4 text-sm text-default-500">No publications</div>
         ) : (
           <Tabs
-            selectedKey={active}
+            selectedKey={active ?? undefined}
             onSelectionChange={(k) => setActive(k as string)}
             className="flex flex-col"
             // tab list는 자동, 내용 영역만 스크롤되도록
