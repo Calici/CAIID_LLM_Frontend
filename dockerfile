@@ -39,6 +39,7 @@ RUN \
   fi
 
 # Production image, copy all the files and run next
+RUN ls /app/.next
 FROM base AS runner
 WORKDIR /app
 
