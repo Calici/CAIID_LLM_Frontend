@@ -69,9 +69,9 @@ export default function RightPane({ publications }: RightPaneT) {
 
   return (
     <div className="h-full flex flex-col min-h-0">
-      <div className="flex flex-row items-center gap-3 p-3 border-b justify-between w-full">
+      {/* <div className="flex flex-row items-center gap-3 p-3 border-b justify-between w-full">
         <p className="font-semibold">Publications</p>
-      </div>
+      </div> */}
 
       {/* <div className="border-b h-2/3 overflow-auto">
         {publications.map((p,i) => (
