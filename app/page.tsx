@@ -307,7 +307,8 @@ export default function Page() {
               canEditWorkspace={Boolean(activeUuid)}
               onRenameWorkspace={renameActiveWorkspace}
               onDeleteWorkspace={deleteActiveWorkspace}
-              showGreeting={activeUuid === null && messages.length === 0}
+              showGreeting={activeUuid === null}
+              uuid={activeUuid}
               username={serverConfig?.username ?? null}
             />
           </section>

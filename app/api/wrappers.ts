@@ -147,6 +147,12 @@ export function agentSummariseFile(tempFileUuid: string): Promise<string> {
     .then((response) => response.data);
 }
 
+export function agentContinuation(workspace_uuid: string): Promise<string[]> {
+  return axiosInstance
+    .get<string[]>(`/agent.continuation/${workspace_uuid}`)
+    .then((resp) => resp.data);
+}
+
 export function fsDelete(fileUuid: string): Promise<void> {
   return axiosInstance.delete(`/fs/${fileUuid}`).then(() => {
     return undefined;

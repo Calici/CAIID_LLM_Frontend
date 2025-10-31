@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -10,12 +10,119 @@ import {
   faPen,
   faTrash,
   faUpload,
+  faWandMagicSparkles,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 
-import type { MessageT } from "@/app/api/wrappers";
+import { agentContinuation, type MessageT } from "@/app/api/wrappers";
 import ChatCard from "./ChatCard";
 import SafeButton from "./safebutton/safebutton";
+import { Popover, PopoverContent, PopoverTrigger } from "@heroui/popover";
+import { Spinner } from "@heroui/spinner";
+import { useDisclosure } from "@heroui/modal";
+
+type ChatAreaP = {
+  value: string;
+  setValue: React.Dispatch<React.SetStateAction<string>>;
+  send: () => void;
+  isGenerating: boolean;
+  uuid: string | null;
+};
+
+function ChatArea({ value, setValue, send, isGenerating, uuid }: ChatAreaP) {
+  const [choices, setChoices] = useState<string[] | null>([]);
+
+  const getChoices = useCallback(() => {
+    if (uuid === null) {
+      setChoices([
+        "Get me publications on HIV",
+        "Show me the files I have",
+        "Tell me about clinical trials related to HPV",
+      ]);
+      return;
+    } else {
+      setChoices(null);
+      agentContinuation(uuid).then(setChoices);
+    }
+  }, [uuid]);
+  const { isOpen, onOpenChange } = useDisclosure();
+  return (
+    <Textarea
+      minRows={1}
+      maxRows={8}
+      value={value}
+      onValueChange={setValue}
+      placeholder="Look up publications for HIV"
+      className="flex-1"
+      variant="bordered"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          send();
+        }
+      }}
+      endContent={
+        <div className="flex flex-row gap-x-2">
+          <Popover
+            isOpen={isOpen}
+            showArrow
+            onOpenChange={() => {
+              onOpenChange();
+              getChoices();
+            }}
+          >
+            <PopoverTrigger>
+              <Button isIconOnly color="primary" isDisabled={isGenerating}>
+                <FontAwesomeIcon icon={faWandMagicSparkles} />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="min-w-96 min-h-40 flex flex-col p-4 justify-start items-start">
+              <Spinner
+                aria-hidden={choices !== null}
+                className="aria-hidden:hidden self-center justify-self-center"
+              />
+              <div
+                className="aria-hidden:hidden self-center justify-self-center"
+                aria-hidden={choices === null || choices.length !== 0}
+              >
+                <p className="font-light text-gray-400 text-xl">
+                  No Recommendations
+                </p>
+              </div>
+              <div
+                className="aria-hidden:hidden flex flex-col gap-x-2 w-full"
+                aria-hidden={choices === null || choices.length === 0}
+              >
+                {(choices || []).map((choice) => (
+                  <Button
+                    key={choice}
+                    className="justify-start p-2 w-full"
+                    onPress={() => {
+                      setValue(choice);
+                      send();
+                      onOpenChange();
+                    }}
+                    variant="light"
+                  >
+                    {choice}
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Button
+            color="primary"
+            onPress={send}
+            isLoading={isGenerating}
+            isIconOnly
+          >
+            <FontAwesomeIcon icon={faArrowUp} />
+          </Button>
+        </div>
+      }
+    />
+  );
+}
 
 type ChatPanelProps = {
   messages: MessageT[];
@@ -27,6 +134,7 @@ type ChatPanelProps = {
   onDeleteWorkspace: () => Promise<any>;
   showGreeting: boolean;
   username: string | null;
+  uuid: string | null;
 };
 
 export default function ChatPanel({
@@ -39,6 +147,7 @@ export default function ChatPanel({
   onDeleteWorkspace,
   showGreeting,
   username,
+  uuid,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
@@ -101,41 +210,22 @@ export default function ChatPanel({
     return Promise.resolve(onDeleteWorkspace());
   }, [disableActions, onDeleteWorkspace]);
 
-  if (showGreeting) {
-    const displayUsername = username?.trim() ? username.trim() : "there";
+  if (uuid === null) {
     return (
       <div className="flex flex-col h-full items-center justify-center mx-8 gap-y-4">
         <div className="flex flex-col gap-y-2 text-center w-full">
           <h1 className="text-3xl font-semibold text-muted-100">
-            {`Hi ${displayUsername},`}
+            Hi {username}
           </h1>
-          <p className="text-lg text-muted-400">How can I help you?</p>
+          <p className="text-lg text-muted-400">How can I help ?</p>
         </div>
         <div className="flex flex-row gap-x-2 w-full">
-          <Textarea
-            minRows={1}
-            maxRows={8}
+          <ChatArea
             value={input}
-            onValueChange={setInput}
-            placeholder="Type your message... (Enter: Send, Shift+Enter: New line)"
-            className="flex-1"
-            variant="bordered"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            endContent={
-              <Button
-                color="primary"
-                onPress={handleSend}
-                isLoading={isGenerating}
-                isIconOnly
-              >
-                <FontAwesomeIcon icon={faArrowUp} />
-              </Button>
-            }
+            setValue={setInput}
+            send={handleSend}
+            uuid={uuid}
+            isGenerating={isGenerating}
           />
         </div>
       </div>
@@ -240,30 +330,12 @@ export default function ChatPanel({
       </div>
 
       <div className="border-t border-surface-strong p-3">
-        <Textarea
-          minRows={1}
-          maxRows={8}
+        <ChatArea
           value={input}
-          onValueChange={setInput}
-          placeholder="Type your message... (Enter: Send, Shift+Enter: New line)"
-          className="flex-1"
-          variant="bordered"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          endContent={
-            <Button
-              color="primary"
-              onPress={handleSend}
-              isLoading={isGenerating}
-              isIconOnly
-            >
-              <FontAwesomeIcon icon={faArrowUp} />
-            </Button>
-          }
+          setValue={setInput}
+          send={handleSend}
+          uuid={uuid}
+          isGenerating={isGenerating}
         />
       </div>
     </div>

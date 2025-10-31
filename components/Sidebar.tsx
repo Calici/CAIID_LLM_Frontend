@@ -201,12 +201,12 @@ export default function Sidebar({
                 className="flex items-center w-full aria-hidden:hidden"
                 aria-hidden={editingId === w.uuid}
               >
-                <p
+                <div
                   onClick={() => onSelectWorkspace(w.uuid)}
-                  className="flex-1 whitespace-nowrap text-ellipsis"
+                  className="flex-1 whitespace-nowrap text-ellipsis h-full"
                 >
-                  {w.name.slice(0, 30)}
-                </p>
+                  <p>{w.name.slice(0, 30)}</p>
+                </div>
                 <div className="flex flex-row gap-x-2 w-fit">
                   <Button
                     isIconOnly
