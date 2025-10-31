@@ -64,6 +64,7 @@ export default function FilesPanel() {
       const files = e.target.files;
       if (files === null) return;
       setUploadedFileName(files[0].name);
+      setSummary(null)
       fsTempUpload(files[0].name, files[0])
         .then(({ uuid }) => {
           setUuid(uuid);
@@ -74,13 +75,13 @@ export default function FilesPanel() {
     []
   );
 
-  const handleConfirmUpload = React.useCallback(() => {
+  const handleConfirmUpload = React.useCallback((onClose: () => void) => {
     if (uuid === null || summary === null || uploadedFileName === null)
       return Promise.resolve(null);
-    console.log(`filename: ${uploadedFileName}`);
     return fsConfirmUpload(uuid, { name: uploadedFileName, summary })
       .then(() => {
         fetchFiles();
+        onClose()
       })
       .catch((e) => {
         if (e?.response?.status === 409 || e?.status === 409) {
@@ -210,22 +211,23 @@ export default function FilesPanel() {
                   <div className="flex items-center gap-2">
                     <Input
                       size="sm"
-                      value={proposedName ?? ""}
-                      onValueChange={setProposedName}
+                      // value={proposedName ?? ""}
+                      // onValueChange={setProposedName}
+                      value={uploadedFileName || ""}
+                      onValueChange={setUploadedFileName}
                       aria-label="New File Name"
                     />
-                    <Button
+                    {/* <Button
                       size="sm"
                       onPress={() => {
                         if (!uuid || !summary) return;
-
                         // 1) Update new filename to session value
                         setUploadedFileName(proposedName);
                       }}
                       disableRipple
                     >
                       OK
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               )}
@@ -239,7 +241,7 @@ export default function FilesPanel() {
                 >
                   Clear
                 </Button>
-                <SafeButton color="primary" onPress={handleConfirmUpload}>
+                <SafeButton color="primary" onPress={() => handleConfirmUpload(onClose)}>
                   Save
                 </SafeButton>
               </ModalFooter>
