@@ -67,17 +67,16 @@ export function postChatStream(payload: ChatPayload, handlers: Handlers) {
         const [parsed, remains] = parseFromRaw(remainsCache + value);
         remainsCache = remains ?? "";
 
-        parsed
-          .map(parseToJSON)
-          .forEach((element) => {
-            if (element.type === "chat") {
-              handlers.onChat(element.content);
-            } else if (element.type === "record") {
-              handlers.onRecord(element.content.name, element.content.uuid);
-            } else if (element.type === "query") {
-              handlers.onQuery(element.content);
-            }
-          });
+        parsed.map(parseToJSON).forEach((element) => {
+          if (element.type === "chat") {
+            console.log(element.content);
+            handlers.onChat(element.content);
+          } else if (element.type === "record") {
+            handlers.onRecord(element.content.name, element.content.uuid);
+          } else if (element.type === "query") {
+            handlers.onQuery(element.content);
+          }
+        });
       }
 
       return processReader(reader);
@@ -97,7 +96,9 @@ export function postChatStream(payload: ChatPayload, handlers: Handlers) {
           .text()
           .catch(() => "")
           .then((text) => {
-            throw new Error(text ? `HTTP ${resp.status} ${text}` : `HTTP ${resp.status}`);
+            throw new Error(
+              text ? `HTTP ${resp.status} ${text}` : `HTTP ${resp.status}`,
+            );
           });
       }
 
