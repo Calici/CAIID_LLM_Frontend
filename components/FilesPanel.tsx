@@ -134,7 +134,7 @@ export default function FilesPanel() {
           {files.map((f) => (
             <div
               key={f.uuid} // ← uuid로 key
-              className="flex items-center justify-between gap-3 px-2 py-2 rounded-lg hover:bg-surface-strong cursor-pointer"
+              className="flex items-center justify-between gap-3 px-2 py-2 rounded-lg hover:bg-muted-100 cursor-pointer"
               title={f.summary}
             >
               <div className="min-w-0">
