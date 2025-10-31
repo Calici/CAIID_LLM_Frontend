@@ -61,6 +61,7 @@ export default function QueryPanel({ value, onChange, onSubmit, isLoading }: Pro
             onPress={onSubmit}
             isDisabled={isLoading}
             color="primary"
+            disableRipple
           >
             Apply to next query
           </Button>

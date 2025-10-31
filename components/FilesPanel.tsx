@@ -23,29 +23,29 @@ import { Input } from "@heroui/input";
 import { fsList, type FileRow } from "@/app/api/wrappers";
 
 export default function FilesPanel() {
-  // File renew related
   const [files, setFiles] = React.useState<FileRow[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
-  const fetchFiles = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      setErr(null);
-      const list = await fsList(); // ← 실제 API 호출
-      setFiles(list);
-    } catch (e: any) {
-      setErr(e?.message ?? "Failed to load files");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchFiles = React.useCallback(() => {
+    setLoading(true);
+    setErr(null);
+
+    return fsList()
+      .then((list) => {
+        setFiles(list);
+      })
+      .catch((e: any) => {
+        setErr(e?.message ?? "Failed to load files");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [setErr, setFiles, setLoading]);
 
   React.useEffect(() => {
-    fetchFiles(); // ← 마운트 시 1회 호출
-    console.log(`files : ${files}`);
+    fetchFiles();
   }, [fetchFiles]);
 
-  // File Upload related
   const [FileUploadModalOpen, setFileUploadModalOpen] = useState(false);
   const [uploadedFileName, setUploadedFileName] = React.useState<string | null>(
     null
@@ -60,7 +60,6 @@ export default function FilesPanel() {
   );
 
   const handleUpload = React.useCallback(
-    //Temp Upload
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
       if (files === null) return;
@@ -76,7 +75,6 @@ export default function FilesPanel() {
   );
 
   const handleConfirmUpload = React.useCallback(() => {
-    //Confirm Upload
     if (uuid === null || summary === null || uploadedFileName === null)
       return Promise.resolve(null);
     console.log(`filename: ${uploadedFileName}`);
@@ -95,44 +93,52 @@ export default function FilesPanel() {
   }, [uuid, summary, uploadedFileName]);
 
   const handleClear = React.useCallback(() => {
-    //Clear Btn
     setUploadedFileName(null);
     setUuid(null);
     setSummary(null);
     setNeedsRename(false);
   }, []);
 
+  const handleDeleteConfirmed = React.useCallback(() => {
+    if (!confirmDelete) return Promise.resolve(null);
+    return fsDelete(confirmDelete.uuid).then(() => {
+      setFiles((prev) => prev.filter((x) => x.uuid !== confirmDelete.uuid));
+      setConfirmDelete(null);
+    });
+  }, [confirmDelete, setFiles, setConfirmDelete]);
+
   return (
     <div className="h-1/3 flex-1">
       <div className="flex flex-col h-full min-h-0 w-full">
-        <div className="flex flex-row items-center gap-3 px-3 py-2 border-b justify-between w-full">
+        <div className="flex flex-row items-center gap-3 px-3 py-2 border-b border-surface-strong justify-between w-full">
           <h2 className="text-lg font-semibold">Files</h2>
           <p>
             <Button
               color="primary"
               endContent={<FontAwesomeIcon icon={faUpload} />}
               onPress={() => setFileUploadModalOpen(true)}
+              disableRipple
             >
               Upload File
             </Button>
           </p>
         </div>
         <ScrollShadow className="flex-1 overflow-auto max-h-full px-3 space-y-2">
-          {loading && <div className="text-sm text-gray-500">Loading...</div>}
-          {err && <div className="text-sm text-danger">Error: {err}</div>}
+          {loading && <div className="text-sm text-muted-400">Loading...</div>}
+          {err && <div className="text-sm text-danger-500">Error: {err}</div>}
           {!loading && !err && files.length === 0 && (
-            <div className="text-sm text-gray-500">No files yet</div>
+            <div className="text-sm text-muted-400">No files yet</div>
           )}
           {files.map((f) => (
             <div
               key={f.uuid} // ← uuid로 key
-              className="group flex items-center justify-between gap-3 px-2 py-2 rounded-lg hover:bg-default-100 cursor-pointer"
+              className="group flex items-center justify-between gap-3 px-2 py-2 rounded-lg hover:bg-surface-strong cursor-pointer"
               title={f.summary}
             >
               <div className="min-w-0">
                 <div className="text-sm font-medium truncate">{f.name}</div>
                 {f.summary && (
-                  <div className="text-xs text-gray-600 line-clamp-2">
+                  <div className="text-xs text-muted-500 line-clamp-2">
                     {f.summary}
                   </div>
                 )}
@@ -143,6 +149,7 @@ export default function FilesPanel() {
                   onPress={() => {
                     setConfirmDelete(f);
                   }}
+                  disableRipple
                 >
                   <FontAwesomeIcon icon={faTrash} />
                 </Button>
@@ -178,25 +185,26 @@ export default function FilesPanel() {
                   endContent={<FontAwesomeIcon icon={faFile} />}
                   as="label"
                   htmlFor="fileUploadId"
+                  disableRipple
                 >
                   Select File
                 </Button>
-                <div className="flex flex-col bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <p className="text-sm font-medium text-gray-800">
+                <div className="flex flex-col bg-primary-50 rounded-lg p-3 border border-primary-200">
+                  <p className="text-sm font-medium text-primary-700">
                     Uploaded File:{" "}
-                    <span className="ml-2 text-gray-700">
+                    <span className="ml-2 text-primary-600">
                       {uploadedFileName || "No file Selected"}
                     </span>
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-primary-500">
                     {summary || "[ File Summary ]"}
                   </p>
                 </div>
               </ModalBody>
               {/* in case of Duplicate filename (409) */}
               {needsRename && (
-                <div className="border border-amber-200 bg-amber-50 p-3">
-                  <p className="text-sm font-medium text-amber-900">
+                <div className="border border-warning-200 bg-warning-50 p-3">
+                  <p className="text-sm font-medium text-warning-700">
                     Same file exists. Please Rename :
                   </p>
                   <div className="flex items-center gap-2">
@@ -213,10 +221,8 @@ export default function FilesPanel() {
 
                         // 1) Update new filename to session value
                         setUploadedFileName(proposedName);
-                        console.log(
-                          `filename: ${uploadedFileName}, proposedName:${proposedName}, summary:${summary}`
-                        );
                       }}
+                      disableRipple
                     >
                       OK
                     </Button>
@@ -229,6 +235,7 @@ export default function FilesPanel() {
                   onPress={() => {
                     handleClear();
                   }}
+                  disableRipple
                 >
                   Clear
                 </Button>
@@ -255,20 +262,15 @@ export default function FilesPanel() {
                 </p>
               </ModalBody>
               <ModalFooter>
-                <Button onPress={onClose}>Cancel</Button>
-                <Button
+                <Button onPress={onClose} disableRipple>
+                  Cancel
+                </Button>
+                <SafeButton
                   color="danger"
-                  onPress={async () => {
-                    if (!confirmDelete) return;
-                    await fsDelete(confirmDelete.uuid);
-                    setFiles((prev) =>
-                      prev.filter((x) => x.uuid !== confirmDelete.uuid)
-                    );
-                    setConfirmDelete(null);
-                  }}
+                  onPress={handleDeleteConfirmed}
                 >
                   Delete
-                </Button>
+                </SafeButton>
               </ModalFooter>
             </>
           )}

@@ -1,14 +1,126 @@
-import {heroui} from "@heroui/theme"
+import { heroui } from "@heroui/theme";
 
 /** @type {import('tailwindcss').Config} */
 const config = {
   content: [
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}"
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
+  plugins: [heroui(), require("@tailwindcss/typography")],
   theme: {
     extend: {
+      colors: {
+        surface: {
+          DEFAULT: "#0d1224",
+          muted: "#151c39",
+          strong: "#1d2754",
+          glow: "#27326e",
+        },
+        primary: {
+          DEFAULT: "#1e78ff",
+          50: "#eef5ff",
+          100: "#d6e7ff",
+          200: "#a8cbff",
+          300: "#7ab0ff",
+          400: "#4c94ff",
+          500: "#1e78ff",
+          600: "#155bd4",
+          700: "#0e409e",
+          800: "#08286a",
+          900: "#031136",
+        },
+        secondary: {
+          DEFAULT: "#7534ff",
+          50: "#f3edff",
+          100: "#e3d6ff",
+          200: "#c6adff",
+          300: "#aa85ff",
+          400: "#8f5cff",
+          500: "#7534ff",
+          600: "#5b25cc",
+          700: "#411a99",
+          800: "#2a1166",
+          900: "#140833",
+        },
+        accent: {
+          DEFAULT: "#00c9a0",
+          50: "#e6fffa",
+          100: "#bfffef",
+          200: "#7dffe2",
+          300: "#3affd6",
+          400: "#00f0c3",
+          500: "#00c9a0",
+          600: "#00987a",
+          700: "#006854",
+          800: "#00372d",
+          900: "#001814",
+        },
+        muted: {
+          DEFAULT: "#4366b3",
+          100: "#afc3f3",
+          200: "#94ace8",
+          300: "#7794dc",
+          400: "#5d7dc8",
+          500: "#4366b3",
+          600: "#344f8a",
+          700: "#253862",
+          800: "#182340",
+          900: "#0b1020",
+        },
+        success: {
+          DEFAULT: "#00b873",
+          50: "#e8fff6",
+          100: "#bfffe4",
+          200: "#80f7c7",
+          300: "#41e7aa",
+          400: "#12d18c",
+          500: "#00b873",
+          600: "#00905b",
+          700: "#006843",
+          800: "#00402b",
+          900: "#001812",
+        },
+        warning: {
+          DEFAULT: "#ff9900",
+          50: "#fff7e6",
+          100: "#ffedbf",
+          200: "#ffdc80",
+          300: "#ffc940",
+          400: "#ffb100",
+          500: "#ff9900",
+          600: "#db7800",
+          700: "#b05900",
+          800: "#7b3b00",
+          900: "#3d1e00",
+        },
+        danger: {
+          DEFAULT: "#f5004e",
+          50: "#ffe8ef",
+          100: "#ffc0d3",
+          200: "#ff88ac",
+          300: "#ff5084",
+          400: "#ff2766",
+          500: "#f5004e",
+          600: "#c3003f",
+          700: "#91002f",
+          800: "#5f001f",
+          900: "#2e000f",
+        },
+        info: {
+          DEFAULT: "#0077e6",
+          50: "#e7f4ff",
+          100: "#c2e0ff",
+          200: "#89c6ff",
+          300: "#51acff",
+          400: "#1a92ff",
+          500: "#0077e6",
+          600: "#005db4",
+          700: "#004382",
+          800: "#002951",
+          900: "#001220",
+        },
+      },
       fontFamily: {
         sans: ["var(--font-sans)"],
         mono: ["var(--font-mono)"],
@@ -16,10 +128,6 @@ const config = {
     },
   },
   darkMode: "class",
-  plugins: [
-    heroui(),
-    require("@tailwindcss/typography")
-  ],
-}
+};
 
 module.exports = config;

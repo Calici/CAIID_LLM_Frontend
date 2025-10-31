@@ -57,7 +57,7 @@ export function useSafeButton(
  * ... any other props that render takes.
  */
 const SafeButton = React.forwardRef(function SafeButton(
-  { onPress, ...props }: SafeButtonP,
+  { onPress, disableRipple = true, ...props }: SafeButtonP,
   ref: React.ForwardedRef<HTMLButtonElement>
 ) {
   const buttonRef = React.useRef<HTMLButtonElement>(null);
@@ -68,6 +68,7 @@ const SafeButton = React.forwardRef(function SafeButton(
       {...props}
       isLoading={isLoading}
       onPress={onClick}
+      disableRipple={disableRipple}
       ref={buttonRef}
     />
   );

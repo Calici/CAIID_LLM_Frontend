@@ -4,13 +4,13 @@ export const title = tv({
   base: "tracking-tight inline font-semibold",
   variants: {
     color: {
-      violet: "from-[#FF1CF7] to-[#b249f8]",
-      yellow: "from-[#FF705B] to-[#FFB457]",
-      blue: "from-[#5EA2EF] to-[#0072F5]",
-      cyan: "from-[#00b7fa] to-[#01cfea]",
-      green: "from-[#6FEE8D] to-[#17c964]",
-      pink: "from-[#FF72E1] to-[#F54C7A]",
-      foreground: "dark:from-[#FFFFFF] dark:to-[#4B4B4B]",
+      violet: "from-[#7534ff] to-[#411a99]",
+      yellow: "from-[#ff9900] to-[#b05900]",
+      blue: "from-[#4c94ff] to-[#0e409e]",
+      cyan: "from-[#00f0c3] to-[#006854]",
+      green: "from-[#00b873] to-[#006843]",
+      pink: "from-[#ff2766] to-[#91002f]",
+      foreground: "dark:from-[#e6f5ff] dark:to-[#27326e]",
     },
     size: {
       sm: "text-3xl lg:text-4xl",
@@ -41,7 +41,7 @@ export const title = tv({
 });
 
 export const subtitle = tv({
-  base: "w-full md:w-1/2 my-2 text-lg lg:text-xl text-default-600 block max-w-full",
+  base: "w-full md:w-1/2 my-2 text-lg lg:text-xl text-muted-600 block max-w-full",
   variants: {
     fullWidth: {
       true: "!w-full",

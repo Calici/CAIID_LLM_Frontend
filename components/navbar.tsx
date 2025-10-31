@@ -13,7 +13,6 @@ import { Link } from "@heroui/link";
 import { Input } from "@heroui/input";
 import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
-import clsx from "clsx";
 
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -25,13 +24,14 @@ import {
   SearchIcon,
   Logo,
 } from "@/components/icons";
+import { cn } from "@/lib/utils";
 
 export const Navbar = () => {
   const searchInput = (
     <Input
       aria-label="Search"
       classNames={{
-        inputWrapper: "bg-default-100",
+        inputWrapper: "bg-surface-muted",
         input: "text-sm",
       }}
       endContent={
@@ -42,7 +42,7 @@ export const Navbar = () => {
       labelPlacement="outside"
       placeholder="Search..."
       startContent={
-        <SearchIcon className="text-base text-default-400 pointer-events-none flex-shrink-0" />
+        <SearchIcon className="text-base text-muted-300 pointer-events-none flex-shrink-0" />
       }
       type="search"
     />
@@ -61,7 +61,7 @@ export const Navbar = () => {
           {siteConfig.navItems.map((item) => (
             <NavbarItem key={item.href}>
               <NextLink
-                className={clsx(
+                className={cn(
                   linkStyles({ color: "foreground" }),
                   "data-[active=true]:text-primary data-[active=true]:font-medium",
                 )}
@@ -81,13 +81,13 @@ export const Navbar = () => {
       >
         <NavbarItem className="hidden sm:flex gap-2">
           <Link isExternal aria-label="Twitter" href={siteConfig.links.twitter}>
-            <TwitterIcon className="text-default-500" />
+            <TwitterIcon className="text-muted-400" />
           </Link>
           <Link isExternal aria-label="Discord" href={siteConfig.links.discord}>
-            <DiscordIcon className="text-default-500" />
+            <DiscordIcon className="text-muted-400" />
           </Link>
           <Link isExternal aria-label="Github" href={siteConfig.links.github}>
-            <GithubIcon className="text-default-500" />
+            <GithubIcon className="text-muted-400" />
           </Link>
           <ThemeSwitch />
         </NavbarItem>
@@ -96,10 +96,11 @@ export const Navbar = () => {
           <Button
             isExternal
             as={Link}
-            className="text-sm font-normal text-default-600 bg-default-100"
+            className="text-sm font-normal text-muted-500 bg-surface-muted"
             href={siteConfig.links.sponsor}
-            startContent={<HeartFilledIcon className="text-danger" />}
+            startContent={<HeartFilledIcon className="text-danger-400" />}
             variant="flat"
+            disableRipple
           >
             Sponsor
           </Button>
@@ -108,7 +109,7 @@ export const Navbar = () => {
 
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
         <Link isExternal aria-label="Github" href={siteConfig.links.github}>
-          <GithubIcon className="text-default-500" />
+          <GithubIcon className="text-muted-400" />
         </Link>
         <ThemeSwitch />
         <NavbarMenuToggle />
