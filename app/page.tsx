@@ -396,7 +396,7 @@ export default function Page() {
 
           {/* 오른쪽 파일 패널 (원하시면 동일한 방식으로 토글) */}
           <aside className="hidden border-l border-surface-strong lg:block h-full w-[500px]">
-            <RightPane publications={queries} />
+            <RightPane publications={queries} onHttpError={handleHttpError} />
           </aside>
           {notice && countdown !== null && (
             <div

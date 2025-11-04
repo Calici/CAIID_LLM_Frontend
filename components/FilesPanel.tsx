@@ -22,10 +22,15 @@ import SafeButton from "./safebutton/safebutton";
 import { Input } from "@heroui/input";
 import { fsList, type FileRow } from "@/app/api/wrappers";
 
-export default function FilesPanel() {
+type FilesPanelProps = {
+   onHttpError?: (err: { response?: { status?: number }; status?: number }) => void;
+}
+
+export default function FilesPanel({onHttpError}:FilesPanelProps) {
   const [files, setFiles] = React.useState<FileRow[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const fetchFiles = React.useCallback(() => {
     setLoading(true);
     setErr(null);
@@ -65,14 +70,22 @@ export default function FilesPanel() {
       if (files === null) return;
       setUploadedFileName(files[0].name);
       setSummary(null)
+      setUploading(true);
       fsTempUpload(files[0].name, files[0])
         .then(({ uuid }) => {
           setUuid(uuid);
           return agentSummariseFile(uuid);
         })
-        .then(setSummary);
+        .then(setSummary)
+        .catch((e:any) => {
+          const status = e?.response?.status ?? e?.status ?? 0;
+          onHttpError?.({ status });
+        })
+        .finally(() => {
+          setUploading(false);
+        });
     },
-    []
+    [onHttpError]
   );
 
   const handleConfirmUpload = React.useCallback((onClose: () => void) => {
@@ -90,7 +103,9 @@ export default function FilesPanel() {
           setProposedName(uploadedFileName);
           return null;
         }
-        throw e;
+        const status = e?.response?.status ?? e?.status ?? 0;
+        onHttpError?.({ status });
+        return null;
       });
   }, [uuid, summary, uploadedFileName]);
 
@@ -188,6 +203,7 @@ export default function FilesPanel() {
                   as="label"
                   htmlFor="fileUploadId"
                   disableRipple
+                  isDisabled={uploading}
                 >
                   Select File
                 </Button>

@@ -174,6 +174,8 @@ export default function ConfigEditor({
       isOpen={isOpen}
       onOpenChange={(open) => !open && onClose()}
       placement="center"
+      hideCloseButton
+      isDismissable={false}
     >
       <ModalContent>
         <>

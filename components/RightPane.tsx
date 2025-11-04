@@ -51,9 +51,11 @@ function PublicationItem(publication: PublicationT) {
 /** 우측 패널: 위 Query, 아래 File s */
 export type RightPaneT = {
   publications: PublicationT[];
+   onHttpError?: (err: { response?: { status?: number }; status?: number }) => void;
+
 };
 
-export default function RightPane({ publications }: RightPaneT) {
+export default function RightPane({ publications, onHttpError}: RightPaneT) {
   const grouped = useMemo(() => {
     const map = new Map<string, PublicationT[]>();
     for (const p of publications) {
@@ -105,7 +107,7 @@ export default function RightPane({ publications }: RightPaneT) {
       </div>
 
       {/* FilesPanel은 기존 그대로 사용 */}
-      <FilesPanel /* topicId={...} api={...}  */ />
+      <FilesPanel /* topicId={...} api={...}  */ onHttpError={onHttpError}/>
     </div>
   );
 }
