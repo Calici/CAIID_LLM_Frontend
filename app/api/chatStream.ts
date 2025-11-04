@@ -50,13 +50,14 @@ type Handlers = {
   onRecord: (name: string, uuid: string) => void;
   onQuery: (v: PublicationT[]) => void;
   onEnd?: () => void;
+  onError?: (status: number, err?: any) => void;
 };
 
 export function postChatStream(payload: ChatPayload, handlers: Handlers) {
   let remainsCache = "";
 
   const processReader = (
-    reader: ReadableStreamDefaultReader<string>,
+    reader: ReadableStreamDefaultReader<string>
   ): Promise<null> =>
     reader.read().then(({ value, done }) => {
       if (done) {
@@ -96,9 +97,12 @@ export function postChatStream(payload: ChatPayload, handlers: Handlers) {
           .text()
           .catch(() => "")
           .then((text) => {
-            throw new Error(
-              text ? `HTTP ${resp.status} ${text}` : `HTTP ${resp.status}`,
-            );
+            handlers.onError?.(resp.status, text);
+            handlers.onEnd?.();
+            return null;
+            // throw new Error(
+            //   text ? `HTTP ${resp.status} ${text}` : `HTTP ${resp.status}`,
+            // );
           });
       }
 
@@ -109,6 +113,12 @@ export function postChatStream(payload: ChatPayload, handlers: Handlers) {
       return processReader(reader);
     })
     .then(() => {
+      handlers.onEnd?.();
+      return null;
+    })
+    .catch((err) => {
+      const status = err?.response?.status ?? err?.status ?? 0;
+      handlers.onError?.(status, err);
       handlers.onEnd?.();
       return null;
     });
