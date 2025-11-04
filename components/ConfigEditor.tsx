@@ -179,7 +179,7 @@ export default function ConfigEditor({
     >
       <ModalContent>
         <>
-          <ModalHeader className="text-sm">Settings</ModalHeader>
+          <ModalHeader className="text-sm">설정</ModalHeader>
           <ModalBody className="flex flex-col gap-y-8">
             <Input
               placeholder="John Doe"
@@ -195,7 +195,7 @@ export default function ConfigEditor({
             />
             <div className="flex flex-col gap-y-2">
               <div className="flex flex-row items-center justify-between">
-                <h2>Model Config</h2>
+                <h2>모드 설정</h2>
                 <Tabs
                   selectedKey={mode}
                   onSelectionChange={handleModeSelection}
@@ -205,8 +205,8 @@ export default function ConfigEditor({
                     tab: "h-8 px-3 data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground",
                   }}
                 >
-                  <Tab key="lite" title="Lite" />
-                  <Tab key="heavy" title="Heavy" />
+                  <Tab key="lite" title="라이트" />
+                  <Tab key="heavy" title="헤비" />
                 </Tabs>
               </div>
 
@@ -215,7 +215,7 @@ export default function ConfigEditor({
                 aria-hidden={mode === "heavy"}
               >
                 <Select
-                  label={<p>Model Name</p>}
+                  label={<p>모델 종류</p>}
                   selectedKeys={modelName ? [modelName] : []}
                   onSelectionChange={(keys) => {
                     const { currentKey } = keys;
@@ -237,7 +237,7 @@ export default function ConfigEditor({
               </div>
 
               <Input
-                label="API URL"
+                label="API 주소 (URL)"
                 fullWidth
                 placeholder="https://llm.example.com/v1"
                 variant="bordered"
@@ -251,7 +251,7 @@ export default function ConfigEditor({
               />
 
               <Input
-                label="API Key"
+                label="API 키 (Key)"
                 placeholder="sk-**************************"
                 variant="bordered"
                 type="password"
@@ -266,7 +266,7 @@ export default function ConfigEditor({
               />
             </div>
             <div className="flex flex-row items-center justify-between">
-              <h2>Dark Mode</h2>
+              <h2>다크 모드</h2>
               <Switch
                 size="sm"
                 isSelected={(resolvedTheme ?? theme) === "dark"}
@@ -277,7 +277,7 @@ export default function ConfigEditor({
           </ModalBody>
           <ModalFooter>
             <SafeButton color="primary" onPress={handleSave}>
-              Save
+              저장
             </SafeButton>
           </ModalFooter>
         </>

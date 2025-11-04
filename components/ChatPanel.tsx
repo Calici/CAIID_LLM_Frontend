@@ -52,7 +52,7 @@ function ChatArea({ value, setValue, send, isGenerating, uuid }: ChatAreaP) {
       maxRows={8}
       value={value}
       onValueChange={setValue}
-      placeholder="Look up publications for HIV"
+      placeholder="암 치료와 관련된 최근 publication들을 찾아주세요."
       className="flex-1"
       variant="bordered"
       onKeyDown={(e) => {
@@ -215,9 +215,9 @@ export default function ChatPanel({
       <div className="flex flex-col h-full items-center justify-center mx-8 gap-y-4">
         <div className="flex flex-col gap-y-2 text-center w-full">
           <h1 className="text-3xl font-semibold text-muted-100">
-            Hi {username}
+            안녕하세요 {username} 님!
           </h1>
-          <p className="text-lg text-muted-400">How can I help ?</p>
+          <p className="text-lg text-muted-400">무엇을 도와드릴까요?</p>
         </div>
         <div className="flex flex-row gap-x-2 w-full">
           <ChatArea

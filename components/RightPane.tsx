@@ -86,7 +86,7 @@ export default function RightPane({ publications, onHttpError}: RightPaneT) {
       {/* 2) Tabs 영역 */}
       <div className="flex-1 flex-col flex border-b h-2/3 overflow-hidden">
         {grouped.length === 0 ? (
-          <div className="p-4 text-sm text-default-500">No publications</div>
+          <div className="p-4 text-sm text-default-500">아직 논문들이 준비되지 않았습니다.</div>
         ) : (
           <Tabs
             selectedKey={active ?? undefined}

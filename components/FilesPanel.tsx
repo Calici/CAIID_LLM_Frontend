@@ -128,7 +128,7 @@ export default function FilesPanel({onHttpError}:FilesPanelProps) {
     <div className="h-1/3 flex-1">
       <div className="flex flex-col h-full min-h-0 w-full">
         <div className="flex flex-row items-center gap-3 px-3 py-2 border-b border-surface-strong justify-between w-full">
-          <h2 className="text-lg font-semibold">Files</h2>
+          <h2 className="text-lg font-semibold">업로드된 파일들</h2>
           <p>
             <Button
               color="primary"
@@ -136,15 +136,15 @@ export default function FilesPanel({onHttpError}:FilesPanelProps) {
               onPress={() => setFileUploadModalOpen(true)}
               disableRipple
             >
-              Upload File
+              새 파일 업로드
             </Button>
           </p>
         </div>
         <ScrollShadow className="flex-1 overflow-auto max-h-full px-3 space-y-2">
-          {loading && <div className="text-sm text-muted-400">Loading...</div>}
-          {err && <div className="text-sm text-danger-500">Error: {err}</div>}
+          {loading && <div className="text-sm text-muted-400">파일 로딩 중...</div>}
+          {err && <div className="text-sm text-danger-500">에러: {err}</div>}
           {!loading && !err && files.length === 0 && (
-            <div className="text-sm text-muted-400">No files yet</div>
+            <div className="text-sm py-2 text-muted-400">업로드된 파일들이 없습니다.</div>
           )}
           {files.map((f) => (
             <div
@@ -189,9 +189,9 @@ export default function FilesPanel({onHttpError}:FilesPanelProps) {
             onClose // ← Heroui의 render-prop 패턴
           ) => (
             <>
-              <ModalHeader className="text-sm">File Upload</ModalHeader>
+              <ModalHeader className="text-sm">파일 업로드</ModalHeader>
               <ModalBody>
-                <p className="text-sm">Select the file to upload.</p>
+                <p className="text-sm">업로드할 파일을 선택해주세요.</p>
                 <input
                   type="file"
                   id="fileUploadId"
@@ -205,17 +205,17 @@ export default function FilesPanel({onHttpError}:FilesPanelProps) {
                   disableRipple
                   isDisabled={uploading}
                 >
-                  Select File
+                  파일 선택
                 </Button>
                 <div className="flex flex-col bg-primary-50 rounded-lg p-3 border border-primary-200">
                   <p className="text-sm font-medium text-primary-700">
-                    Uploaded File:{" "}
+                    업로드된 파일:{" "}
                     <span className="ml-2 text-primary-600">
-                      {uploadedFileName || "No file Selected"}
+                      {uploadedFileName || "파일이 선택되지 않았습니다."}
                     </span>
                   </p>
                   <p className="text-sm text-primary-500">
-                    {summary || "[ File Summary ]"}
+                    {summary || "[ 파일 요약이 여기 표시됩니다. ]"}
                   </p>
                 </div>
               </ModalBody>
@@ -223,7 +223,7 @@ export default function FilesPanel({onHttpError}:FilesPanelProps) {
               {needsRename && (
                 <div className="border border-warning-200 bg-warning-50 p-3">
                   <p className="text-sm font-medium text-warning-700">
-                    Same file exists. Please Rename :
+                    같은 이름의 파일이 존재합니다, 파일명을 수정해주세요 :
                   </p>
                   <div className="flex items-center gap-2">
                     <Input
@@ -255,11 +255,12 @@ export default function FilesPanel({onHttpError}:FilesPanelProps) {
                     handleClear();
                   }}
                   disableRipple
+                  isDisabled={uploading}
                 >
-                  Clear
+                  삭제
                 </Button>
-                <SafeButton color="primary" onPress={() => handleConfirmUpload(onClose)}>
-                  Save
+                <SafeButton color="primary" onPress={() => handleConfirmUpload(onClose)} isDisabled={uploading}>
+                  저장
                 </SafeButton>
               </ModalFooter>
             </>
@@ -274,21 +275,21 @@ export default function FilesPanel({onHttpError}:FilesPanelProps) {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-sm">Delete file</ModalHeader>
+              <ModalHeader className="text-sm">파일 삭제</ModalHeader>
               <ModalBody>
                 <p className="text-sm">
-                  Delete <b>{confirmDelete?.name}</b>?
+                  정말 파일 <b>{confirmDelete?.name}을(를) 삭제합니까?</b>
                 </p>
               </ModalBody>
               <ModalFooter>
                 <Button onPress={onClose} disableRipple>
-                  Cancel
+                  취소
                 </Button>
                 <SafeButton
                   color="danger"
                   onPress={handleDeleteConfirmed}
                 >
-                  Delete
+                  삭제
                 </SafeButton>
               </ModalFooter>
             </>

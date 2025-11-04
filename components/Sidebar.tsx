@@ -131,11 +131,11 @@ export default function Sidebar({
   return (
     <div className="flex h-full flex-col w-full">
       <div className="p-4 border-b border-surface-strong">
-        <h2 className="font-semibold">Topics</h2>
+        <h2 className="font-semibold">최근 대화</h2>
         <div className="mt-3">
           <Input
             size="sm"
-            placeholder="Search topics"
+            placeholder="대화 주제 검색"
             value={filter}
             onChange={handleFilterChange}
           />
@@ -150,17 +150,17 @@ export default function Sidebar({
             onPress={handleNewTopic}
             disableRipple
           >
-            New topic
+            새로운 대화
           </Button>
         </div>
       </div>
       <div className="flex flex-col flex-1 w-full">
-        {isLoading && <p className="text-xs text-muted-400">Loading…</p>}
+        {isLoading && <p className="text-xs text-muted-400">최근 대화 로딩 중…</p>}
         {!isLoading && loadErrorMsg && (
-          <p className="text-xs text-danger-500">Failed: {loadErrorMsg}</p>
+          <p className="text-xs text-danger-500">불러오기 오류: {loadErrorMsg}</p>
         )}
         {!isLoading && !loadErrorMsg && filtered.length === 0 && (
-          <p className="text-xs text-muted-300">No topics found</p>
+          <p className="text-xs text-muted-300">최근 대화 내용이 없습니다.</p>
         )}
         <ul className="flex flex-col w-full">
           {filtered.map((w) => (
@@ -186,7 +186,7 @@ export default function Sidebar({
                   isDisabled={!renameDraft.trim()}
                   onPress={handleRenameSave}
                 >
-                  Save
+                  저장
                 </SafeButton>
                 <Button
                   size="sm"
@@ -194,7 +194,7 @@ export default function Sidebar({
                   onPress={handleRenameCancel}
                   disableRipple
                 >
-                  Cancel
+                  취소
                 </Button>
               </div>
               <div
@@ -248,7 +248,7 @@ export default function Sidebar({
           <span className="flex items-center gap-2">
             <FontAwesomeIcon icon={faGear} size="lg" />
           </span>
-          <span className="text-lg text-muted-700">Settings</span>
+          <span className="text-lg text-muted-700">설정</span>
         </Button>
       </div>
 
@@ -257,10 +257,10 @@ export default function Sidebar({
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-sm">Delete workspace</ModalHeader>
+              <ModalHeader className="text-sm">이 대화 기록 삭제</ModalHeader>
               <ModalBody>
                 <p className="text-sm">
-                  This action cannot be undone. Continue?
+                  삭제하면 되돌릴 수 없습니다. 계속할까요?
                 </p>
               </ModalBody>
               <ModalFooter>
@@ -269,10 +269,10 @@ export default function Sidebar({
                   onPress={buildDeleteModalCancel(onClose)}
                   disableRipple
                 >
-                  Cancel
+                  취소
                 </Button>
                 <SafeButton color="danger" onPress={handleDeleteConfirm}>
-                  Delete
+                  삭제
                 </SafeButton>
               </ModalFooter>
             </>
