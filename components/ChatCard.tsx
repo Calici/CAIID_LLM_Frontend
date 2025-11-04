@@ -53,7 +53,7 @@ export default function ChatCard({
               className="rounded-full text-white"
             />
           </div>
-          <p>Bro</p>
+          <p>Yuna</p>
         </div>
         <Card className="px-3 py-2 bg-secondary-100" shadow="none" radius="sm">
           <Markdown>{m.content}</Markdown>
