@@ -25,25 +25,41 @@ type WorkspaceMeta = Omit<Workspace, "chat_history">;
 
 function useWorkspace(
   uuid: string | null,
-  appendUuid: (name: string, uuid: string) => void,
+  appendUuid: (name: string, uuid: string) => void
 ) {
   const [workspace, setWorkspace] = useState<WorkspaceMeta | null>(null);
   const [messages, setMessages] = useState<HistoryT>([]);
   const [queries, setQueries] = useState<StateT["queries"]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [missing, setMissing] = useState(false); // When UUID is missing, call new topic in 3 seconds.
   useEffect(() => {
     if (uuid === null) {
+      setMissing(false);
       setWorkspace(null);
       setMessages([]);
       setQueries([]);
       return;
     }
-    getWorkspace(uuid).then((workspaceResponse) => {
-      const { chat_history, ...meta } = workspaceResponse;
-      setWorkspace(meta);
-      setMessages(chat_history.messages);
-      setQueries(chat_history.queries);
-    });
+    getWorkspace(uuid)
+      .then((workspaceResponse) => {
+        const { chat_history, ...meta } = workspaceResponse;
+        setWorkspace(meta);
+        setMessages(chat_history.messages);
+        setQueries(chat_history.queries);
+        setMissing(false);
+      })
+      .catch((e) => {
+        // in case
+        const status = e?.response?.status ?? e?.status;
+        if (status === 404 || status === 410) {
+          setMissing(true);
+          setWorkspace(null);
+          setMessages([]);
+          setQueries([]);
+        } else {
+          console.log("Network error that is not 404 or 410");
+        }
+      });
   }, [uuid]);
   const sendMessage = useCallback(
     (msg: string) => {
@@ -93,10 +109,10 @@ function useWorkspace(
           onQuery: (v) => {
             setQueries(v);
           },
-        },
+        }
       );
     },
-    [uuid, appendUuid],
+    [uuid, appendUuid]
   );
   const setWorkspaceName = useCallback((name: string) => {
     setWorkspace((prev) => (prev === null ? prev : { ...prev, name }));
@@ -108,6 +124,7 @@ function useWorkspace(
     sendMessage,
     isGenerating,
     setWorkspaceName,
+    missing,
   };
 }
 
@@ -125,6 +142,8 @@ export default function Page() {
   const configParam = searchParams.get("config");
   const isConfigOpen = configParam === "open";
 
+  const [countdown, setCountdown] = useState<number | null>(null); // Countdown Timer for missing pages before return to new page
+
   const setConfigOpen = useCallback(
     (open: boolean) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -138,7 +157,7 @@ export default function Page() {
         scroll: false,
       });
     },
-    [pathname, router, searchParams],
+    [pathname, router, searchParams]
   );
 
   const setActiveUuid = useCallback(
@@ -159,7 +178,7 @@ export default function Page() {
         scroll: false,
       });
     },
-    [pathname, router, searchParams],
+    [pathname, router, searchParams]
   );
 
   const appendUuid = useCallback(
@@ -167,7 +186,7 @@ export default function Page() {
       setWorkspaces((prevWorkspaces) => [{ name, uuid }, ...prevWorkspaces]);
       setActiveUuid(uuid);
     },
-    [setActiveUuid, setWorkspaces],
+    [setActiveUuid, setWorkspaces]
   );
   const {
     workspace,
@@ -176,6 +195,7 @@ export default function Page() {
     sendMessage,
     isGenerating,
     setWorkspaceName,
+    missing,
   } = useWorkspace(activeUuid, appendUuid);
 
   const renameWorkspaceByUuid = useCallback(
@@ -190,8 +210,8 @@ export default function Page() {
                   ...workspaceItem,
                   name: trimmed,
                 }
-              : workspaceItem,
-          ),
+              : workspaceItem
+          )
         );
         if (uuid === activeUuid) {
           setWorkspaceName(trimmed);
@@ -199,21 +219,21 @@ export default function Page() {
         return null;
       });
     },
-    [activeUuid, setWorkspaceName, setWorkspaces],
+    [activeUuid, setWorkspaceName, setWorkspaces]
   );
 
   const deleteWorkspaceByUuid = useCallback(
     (uuid: string) =>
       deleteWorkspace(uuid).then(() => {
         setWorkspaces((prev) =>
-          prev.filter((workspaceItem) => workspaceItem.uuid !== uuid),
+          prev.filter((workspaceItem) => workspaceItem.uuid !== uuid)
         );
         if (uuid === activeUuid) {
           setActiveUuid(null);
         }
         return null;
       }),
-    [activeUuid, setActiveUuid, setWorkspaces],
+    [activeUuid, setActiveUuid, setWorkspaces]
   );
 
   useEffect(() => {
@@ -227,7 +247,7 @@ export default function Page() {
       setServerConfig(config);
       const haveNull = Object.values(config).reduce(
         (prev, cur) => prev || cur === null,
-        false,
+        false
       );
       if (haveNull) {
         setConfigOpen(true);
@@ -235,12 +255,33 @@ export default function Page() {
     });
   }, []);
 
+  // Countdown Timer hook when missing UUID
+  useEffect(() => {
+    if (!missing) {
+      setCountdown(null);
+      return;
+    }
+    setCountdown(3);
+  }, [missing]);
+
+  // 1sec timer
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      // remove UUID
+      setActiveUuid(null);
+      return;
+    }
+    const id = setTimeout(() => setCountdown((c) => (c ?? 0) - 1), 1000);
+    return () => clearTimeout(id);
+  }, [countdown, setActiveUuid]);
+
   const renameActiveWorkspace = useCallback(
     (name: string) => {
       if (!activeUuid) return Promise.resolve(null);
       return renameWorkspaceByUuid(activeUuid, name);
     },
-    [activeUuid, renameWorkspaceByUuid],
+    [activeUuid, renameWorkspaceByUuid]
   );
 
   const deleteActiveWorkspace = useCallback(() => {
@@ -264,14 +305,14 @@ export default function Page() {
       api_url: serverConfig?.api_url ?? null,
       api_key: null,
     }),
-    [serverConfig],
+    [serverConfig]
   );
 
   const handleConfigSave = useCallback(
     (config: ServerPayload) => {
       return updateLlmServer(config);
     },
-    [setServerConfig],
+    [setServerConfig]
   );
 
   return (
@@ -317,6 +358,13 @@ export default function Page() {
           <aside className="hidden border-l border-surface-strong lg:block h-full w-[500px]">
             <RightPane publications={queries} />
           </aside>
+          {missing && countdown !== null && (
+            <div className="fixed top-2 left-1/2 -translate-x-1/2 z-50 bg-warning-100 text-warning-800 border border-warning-300 rounded-md px-3 py-2 shadow">
+              {" "}
+              Topic이 존재하지 않습니다. {countdown}초 후 새 토픽을
+              생성합니다…{" "}
+            </div>
+          )}
         </div>
       </main>
       <ConfigEditor
