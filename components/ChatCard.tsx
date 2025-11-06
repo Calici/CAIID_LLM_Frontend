@@ -73,7 +73,7 @@ export default function ChatCard({
               className="rounded-full text-white"
             />
           </div>
-          <p>Bro</p>
+          <p>Yuna</p>
         </div>
         <div className="flex flex-row gap-x-2">
           <Spinner
