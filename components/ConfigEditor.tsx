@@ -31,11 +31,11 @@ type ConfigEditorProps = {
 const DEFAULT_OPENAI_URL = "https://api.openai.com/v1";
 
 const MODEL_OPTIONS = [
-  { label: "GPT-5", value: "gpt-5" },
-  { label: "GPT-5-mini", value: "gpt-5-mini" },
-  { label: "GPT-5-pro", value: "gpt-5-pro" },
+  // { label: "GPT-5", value: "gpt-5" },
+  // { label: "GPT-5-mini", value: "gpt-5-mini" },
+  // { label: "GPT-5-pro", value: "gpt-5-pro" },
   { label: "GPT-5-nano", value: "gpt-5-nano" },
-  { label: "gpt-4o-mini", value: "gpt-4o-mini" },
+  // { label: "gpt-4o-mini", value: "gpt-4o-mini" },
 ];
 
 const inferMode = (modelName: string, apiUrl: string): Mode => {
@@ -58,10 +58,10 @@ export default function ConfigEditor({
   const [modelName, setModelName, modelErrors, setModelErrors] =
     useFormInput<string>(defaultConfig.model_name || "");
   const [apiUrl, setApiUrl, apiUrlErrors, setApiUrlErrors] =
-    useFormInput<string>(defaultConfig.api_url || "");
+    useFormInput<string>(defaultConfig.api_url || DEFAULT_OPENAI_URL);
   const [apiKey, setApiKey, apiKeyErrors, setApiKeyErrors] =
     useFormInput<string>("");
-  const [mode, setMode] = useState<Mode>("heavy");
+  const [mode, setMode] = useState<Mode>("lite");
 
   const { theme, setTheme, resolvedTheme } = useTheme();
   const isSSR = useIsSSR();
@@ -69,7 +69,7 @@ export default function ConfigEditor({
   useEffect(() => {
     setUsername(defaultConfig.username || "");
     setModelName(defaultConfig.model_name || "gpt-5-nano");
-    setApiUrl(defaultConfig.api_url || "");
+    setApiUrl(defaultConfig.api_url || DEFAULT_OPENAI_URL);
   }, [defaultConfig]);
 
   const handleModeChange = useCallback(
@@ -79,7 +79,7 @@ export default function ConfigEditor({
         setModelName("gpt-5-nano");
         setApiKey("");
       } else {
-        setModelName("gpt-5-nano");
+        // setModelName("gpt-5-nano");
         setApiUrl("");
         setApiKey("");
       }
