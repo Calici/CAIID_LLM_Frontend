@@ -29,6 +29,8 @@ type ConfigEditorProps = {
 };
 
 const DEFAULT_OPENAI_URL = "https://api.openai.com/v1";
+const GROQ_OPENAI_COMPAT_URL = "https://api.groq.com/openai/v1";
+const CUSTOM_MODEL_KEY = "__custom__";
 
 const MODEL_OPTIONS = [
   // { label: "GPT-5", value: "gpt-5" },
@@ -36,6 +38,7 @@ const MODEL_OPTIONS = [
   // { label: "GPT-5-pro", value: "gpt-5-pro" },
   { label: "GPT-5-nano", value: "gpt-5-nano" },
   // { label: "gpt-4o-mini", value: "gpt-4o-mini" },
+  { label: "직접 입력 (Groq 등)", value: CUSTOM_MODEL_KEY },
 ];
 
 const inferMode = (modelName: string, apiUrl: string): Mode => {
@@ -57,6 +60,12 @@ export default function ConfigEditor({
     useFormInput<string>(defaultConfig.username || "");
   const [modelName, setModelName, modelErrors, setModelErrors] =
     useFormInput<string>(defaultConfig.model_name || "");
+  const [modelSelect, setModelSelect] = useState<string>(() => {
+    const values = MODEL_OPTIONS.map((o) => o.value);
+    return values.includes(defaultConfig.model_name || "")
+      ? (defaultConfig.model_name as string)
+      : CUSTOM_MODEL_KEY;
+  });
   const [apiUrl, setApiUrl, apiUrlErrors, setApiUrlErrors] =
     useFormInput<string>(defaultConfig.api_url || DEFAULT_OPENAI_URL);
   const [apiKey, setApiKey, apiKeyErrors, setApiKeyErrors] =
@@ -70,6 +79,12 @@ export default function ConfigEditor({
     setUsername(defaultConfig.username || "");
     setModelName(defaultConfig.model_name || "gpt-5-nano");
     setApiUrl(defaultConfig.api_url || DEFAULT_OPENAI_URL);
+    const values = MODEL_OPTIONS.map((o) => o.value);
+    setModelSelect(
+      values.includes(defaultConfig.model_name || "")
+        ? (defaultConfig.model_name as string)
+        : CUSTOM_MODEL_KEY
+    );
   }, [defaultConfig]);
 
   const handleModeChange = useCallback(
@@ -77,6 +92,7 @@ export default function ConfigEditor({
       if (nextMode === "lite") {
         setApiUrl(DEFAULT_OPENAI_URL);
         setModelName("gpt-5-nano");
+        setModelSelect("gpt-5-nano");
         setApiKey("");
       } else {
         // setModelName("gpt-5-nano");
@@ -216,11 +232,23 @@ export default function ConfigEditor({
               >
                 <Select
                   label={<p>모델 종류</p>}
-                  selectedKeys={modelName ? [modelName] : []}
+                  selectedKeys={[modelSelect]} // ★변경
                   onSelectionChange={(keys) => {
-                    const { currentKey } = keys;
+                    const { currentKey } = keys as { currentKey?: Key };
                     if (typeof currentKey === "string") {
-                      setModelName(currentKey);
+                      setModelSelect(currentKey); // ★추가
+                      if (currentKey === CUSTOM_MODEL_KEY) {
+                        // '직접 입력' 선택 → 아래 인풋에서 모델명을 입력
+                        setModelName("");
+                        // 사용자가 OpenAI 기본 URL을 쓰고 있었다면 Groq 호환 URL로 1회 자동 채움
+                        setApiUrl((prev) =>
+                          prev.trim() === DEFAULT_OPENAI_URL
+                            ? GROQ_OPENAI_COMPAT_URL
+                            : prev
+                        );
+                      } else {
+                        setModelName(currentKey);
+                      }
                       if (modelErrors.length) setModelErrors(emptyError);
                     }
                   }}
@@ -229,6 +257,26 @@ export default function ConfigEditor({
                     <SelectItem key={option.value}>{option.label}</SelectItem>
                   ))}
                 </Select>
+                {modelSelect === CUSTOM_MODEL_KEY && (
+                  <Input
+                    className="mt-2"
+                    label="모델명 직접 입력"
+                    placeholder="예: llama-3.1-8b-instant (Groq)"
+                    value={modelName}
+                    isInvalid={modelErrors.length > 0}
+                    errorMessage={modelErrors.join(" ")}
+                    onValueChange={(v) => {
+                      setModelName(v);
+                      if (modelErrors.length) setModelErrors(emptyError);
+                    }}
+                  />
+                )}
+                {modelSelect !== CUSTOM_MODEL_KEY && modelErrors.length > 0 && (
+                  <p className="mt-1 text-xs text-danger-500">
+                    {modelErrors.join(" ")}
+                  </p>
+                )}
+
                 {modelErrors.length > 0 && (
                   <p className="mt-1 text-xs text-danger-500">
                     {modelErrors.join(" ")}
