@@ -38,7 +38,7 @@ const MODEL_OPTIONS = [
   // { label: "GPT-5-pro", value: "gpt-5-pro" },
   { label: "GPT-5-nano", value: "gpt-5-nano" },
   // { label: "gpt-4o-mini", value: "gpt-4o-mini" },
-  { label: "직접 입력 (Groq 등)", value: CUSTOM_MODEL_KEY },
+  { label: "직접 입력", value: CUSTOM_MODEL_KEY },
 ];
 
 const inferMode = (modelName: string, apiUrl: string): Mode => {
@@ -228,7 +228,7 @@ export default function ConfigEditor({
 
               <div
                 className="aria-hidden:hidden"
-                aria-hidden={mode === "heavy"}
+                aria-hidden={false}
               >
                 <Select
                   label={<p>모델 종류</p>}
