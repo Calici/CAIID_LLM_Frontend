@@ -248,7 +248,7 @@ export default function Sidebar({
           <span className="flex items-center gap-2">
             <FontAwesomeIcon icon={faGear} size="lg" />
           </span>
-          <span className="text-lg text-muted-700">설정</span>
+          <span className="text-lg">설정</span>
         </Button>
       </div>
 
