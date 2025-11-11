@@ -35,7 +35,7 @@ export default function ChatCard({
           </div>
           <p>User</p>
         </div>
-        <Card className="px-3 py-2 bg-primary-100" shadow="none" radius="sm">
+        <Card className="px-3 py-2 bg-content2 text-foreground" shadow="none" radius="sm">
           {m.content}
         </Card>
       </div>
@@ -55,7 +55,7 @@ export default function ChatCard({
           </div>
           <p>Yuna</p>
         </div>
-        <Card className="px-3 py-2 bg-secondary-100" shadow="none" radius="sm">
+        <Card className="px-3 py-2 bg-content3 text-foreground" shadow="none" radius="sm">
           <Markdown>{m.content}</Markdown>
         </Card>
       </div>
