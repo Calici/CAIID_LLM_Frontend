@@ -12,6 +12,7 @@ import {
   faUpload,
   faWandMagicSparkles,
   faXmark,
+  faMicrophone,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { agentContinuation, type MessageT } from "@/app/api/wrappers";
@@ -30,6 +31,29 @@ type ChatAreaP = {
 };
 
 function ChatArea({ value, setValue, send, isGenerating, uuid }: ChatAreaP) {
+  type VoiceState = "IDLE" | "RECORDING" | "TRANSCRIBING";
+  const [voiceState, setVoiceState] = useState<VoiceState>("IDLE"); // used for voice STT feature
+  const [voiceError, setVoiceError] = useState<string | null>(null); // when STT errors, toast must show up
+  const handleVoiceButtonClick = () => {
+    if (voiceState === "IDLE") {
+      setVoiceState("RECORDING");
+    }
+  };
+  const handleVoiceConfirm = () => {
+    if (voiceState === "RECORDING") {
+      setVoiceState("TRANSCRIBING");
+      // Fix later : add Transcribing action here
+      setTimeout(() => {
+        setValue((prev) => (prev ? prev + "[voice sample]" : "[voice sample]")); // add text to text input area
+        setVoiceState("IDLE");
+      }, 1000);
+    }
+  };
+  const handleVoiceCancel = () => {
+    // Fix later : add voice cancel logic here
+    setVoiceState("IDLE");
+  };
+
   const [choices, setChoices] = useState<string[] | null>([]);
 
   const getChoices = useCallback(() => {
@@ -63,6 +87,54 @@ function ChatArea({ value, setValue, send, isGenerating, uuid }: ChatAreaP) {
       }}
       endContent={
         <div className="flex flex-row gap-x-2">
+          {voiceState === "IDLE" ? (
+            <Button
+              isIconOnly
+              color="danger"
+              area-label="start recording"
+              onPress={handleVoiceButtonClick}
+            >
+              <FontAwesomeIcon icon={faMicrophone} />
+            </Button>
+          ) : (
+            <div
+              className="flex items-center gap-2 px-3 py-1
+    rounded-full border
+    bg-danger-50 border-danger-200 text-danger-700
+    dark:bg-danger-900/20 dark:border-danger-700 dark:text-danger-300"
+            >
+              {/* Left animation placeholder */}
+              <div className="w-4 h-4 rounded-full animate-pulse bg-danger-500 " />
+              {/* Status text */}
+              <span className="text-xs whitespace-nowrap">
+                {voiceState === "RECORDING" ? "녹음 중..." : "변환 중..."}
+              </span>
+              {/* icon buttons on right */}
+              <div className="flex items-center gap-1 ml-2">
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="light"
+                  color="danger"
+                  isDisabled={voiceState === "TRANSCRIBING"}
+                  onPress={handleVoiceConfirm}
+                  aria-label="Confirm voice input"
+                >
+                  <FontAwesomeIcon icon={faCheck} />
+                </Button>
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="light"
+                  color="danger"
+                  onPress={handleVoiceCancel}
+                  aria-label="Cancel voice input"
+                >
+                  <FontAwesomeIcon icon={faXmark} />
+                </Button>
+              </div>
+            </div>
+          )}
           <Popover
             isOpen={isOpen}
             showArrow
