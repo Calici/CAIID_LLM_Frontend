@@ -22,6 +22,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@heroui/popover";
 import { Spinner } from "@heroui/spinner";
 import { useDisclosure } from "@heroui/modal";
 
+import useSpeechToText, { RecordingState } from "./speech_to_text";
+
 type ChatAreaP = {
   value: string;
   setValue: React.Dispatch<React.SetStateAction<string>>;
@@ -30,26 +32,104 @@ type ChatAreaP = {
   uuid: string | null;
 };
 
+type SpeechRecognition = any;
+type SpeechRecognitionConstructor = new () => SpeechRecognition;
+function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null {
+  if (typeof window === "undefined") return null;
+  const w = window as any;
+  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+}
+
 function ChatArea({ value, setValue, send, isGenerating, uuid }: ChatAreaP) {
   type VoiceState = "IDLE" | "RECORDING" | "TRANSCRIBING";
   const [voiceState, setVoiceState] = useState<VoiceState>("IDLE"); // used for voice STT feature
   const [voiceError, setVoiceError] = useState<string | null>(null); // when STT errors, toast must show up
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const [partialTranscript, setPartialTranscript] = useState("");
+
+  const handleRecordedText = useCallback(
+    (text: string) => {
+      // Connect with previous text
+      setValue(text);
+      setVoiceState("IDLE"); // After Recognition, Change state to Idle
+    },
+    [setValue]
+  );
+
+  const { beginRecording, endRecording, toggleRecording, isRecording } =
+    useSpeechToText({
+      setRecordedText: handleRecordedText,
+      continuous: false,  
+      interimResult: true, 
+      timeout: 10000, 
+    });
+
+  const recognitionRef = useRef<any>(null);
+  useEffect(() => {
+    const SR = getSpeechRecognitionConstructor();
+    console.log("SpeechRecognition ctor:", SR);
+    if (!SR) {
+      console.warn("Web Speech API not supported in this browser.");
+      setIsSpeechSupported(false);
+      return;
+    }
+    setIsSpeechSupported(true);
+    const recognition = new SR();
+    recognition.lang = "ko-KR";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    // receieve STT result
+    recognition.onresult = (event: any) => {
+      let finalText = "";
+      let interimText = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const res = event.results[i];
+        if (res.isFinal) {
+          finalText += res[0].transcript;
+        } else {
+          interimText += res[0].transcript;
+        }
+      }
+      if (finalText) {
+        const trimmed = finalText.trim();
+        setPartialTranscript(trimmed);
+
+        setValue((prev) => (prev ? `${prev} ${trimmed}` : trimmed));
+        setVoiceState("IDLE");
+      } else if (interimText) {
+        setPartialTranscript(interimText.trim());
+      }
+    };
+    recognition.onerror = (event: any) => {
+      console.error("Speech error:", event.error);
+      setVoiceError("음성인식 중 오류 발생 : 다시 시도해주세요");
+    };
+  }, []);
+
   const handleVoiceButtonClick = () => {
     if (voiceState === "IDLE") {
       setVoiceState("RECORDING");
+      beginRecording();
     }
   };
   const handleVoiceConfirm = () => {
-    if (voiceState === "RECORDING") {
+    if (voiceState === "RECORDING" && isRecording) {
       setVoiceState("TRANSCRIBING");
       // Fix later : add Transcribing action here
-      setTimeout(() => {
-        setValue((prev) => (prev ? prev + "[voice sample]" : "[voice sample]")); // add text to text input area
-        setVoiceState("IDLE");
-      }, 1000);
+      // setTimeout(() => {
+      //   setValue((prev) => (prev ? prev + "[voice sample]" : "[voice sample]")); // add text to text input area
+      //   setVoiceState("IDLE");
+      // }, 1000);
+      endRecording();
     }
   };
   const handleVoiceCancel = () => {
+    if(isRecording){
+      endRecording();
+    }
     // Fix later : add voice cancel logic here
     setVoiceState("IDLE");
   };
@@ -91,7 +171,7 @@ function ChatArea({ value, setValue, send, isGenerating, uuid }: ChatAreaP) {
             <Button
               isIconOnly
               color="danger"
-              area-label="start recording"
+              aria-label="start recording"
               onPress={handleVoiceButtonClick}
             >
               <FontAwesomeIcon icon={faMicrophone} />
