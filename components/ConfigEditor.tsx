@@ -29,15 +29,18 @@ type ConfigEditorProps = {
 };
 
 const DEFAULT_OPENAI_URL = "https://api.openai.com/v1";
-const GROQ_OPENAI_COMPAT_URL = "https://api.groq.com/openai/v1";
+const GROQ_OPENAI_COMPAT_URL = "https://api.groq.com/";
 const CUSTOM_MODEL_KEY = "__custom__";
 
 const MODEL_OPTIONS = [
   // { label: "GPT-5", value: "gpt-5" },
   // { label: "GPT-5-mini", value: "gpt-5-mini" },
   // { label: "GPT-5-pro", value: "gpt-5-pro" },
-  { label: "GPT-5-nano", value: "gpt-5-nano" },
+  { label: "[OpenAI] GPT-5-nano", value: "gpt-5-nano" },
   // { label: "gpt-4o-mini", value: "gpt-4o-mini" },
+  { label: "[Groq] meta-llama/llama-4-scout-17b-16e-instruct", value: "meta-llama/llama-4-scout-17b-16e-instruct" },
+  { label: "[Groq] qwen/qwen3-32b", value: "qwen/qwen3-32b" },
+  { label: "[Groq] moonshotai/kimi-k2-instruct-0905", value: "moonshotai/kimi-k2-instruct-0905" },
   { label: "직접 입력", value: CUSTOM_MODEL_KEY },
 ];
 
@@ -98,8 +101,10 @@ export default function ConfigEditor({
         setModelSelect("gpt-5-nano");
         setApiKey("");
       } else if (nextMode === "groq") {
-        setApiUrl("http://api.groq.com");
-        setModelName("meta-llama/llama-4-scout-17b-16e-instruct");
+        const groqDefaultModel = "meta-llama/llama-4-scout-17b-16e-instruct"
+        setApiUrl(GROQ_OPENAI_COMPAT_URL);
+        setModelName(groqDefaultModel);
+        setModelSelect(groqDefaultModel);
         setApiKey("");
       } else {
         setApiUrl("http://host.docker.internal:8080/v1");
@@ -124,19 +129,19 @@ export default function ConfigEditor({
 
     if (!trimmedUsername) {
       hasError = true;
-      setUsernameErrors(["Username is required."]);
+      setUsernameErrors(["사용자 이름을 입력해주세요."]);
     }
     if (!trimmedModelName) {
       hasError = true;
-      setModelErrors(["Model must be selected."]);
+      setModelErrors(["모델을 선택해주세요."]);
     }
     if (!trimmedApiUrl) {
       hasError = true;
-      setApiUrlErrors(["API URL cannot be empty."]);
+      setApiUrlErrors(["API URL 을 입력해주세요."]);
     }
     if ((mode === "openai" || mode === "groq") && !trimmedKey) {
       hasError = true;
-      setApiKeyErrors(["API key is required."]);
+      setApiKeyErrors(["API 키를 입력해주세요."]);
     }
 
     return {
@@ -249,11 +254,6 @@ export default function ConfigEditor({
                         // '직접 입력' 선택 → 아래 인풋에서 모델명을 입력
                         setModelName("");
                         // 사용자가 OpenAI 기본 URL을 쓰고 있었다면 Groq 호환 URL로 1회 자동 채움
-                        setApiUrl((prev) =>
-                          prev.trim() === DEFAULT_OPENAI_URL
-                            ? GROQ_OPENAI_COMPAT_URL
-                            : prev
-                        );
                       } else {
                         setModelName(currentKey);
                       }
