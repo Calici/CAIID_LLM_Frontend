@@ -159,16 +159,18 @@ export function fsDelete(fileUuid: string): Promise<void> {
   });
 }
 
+export type ServerMode = "LOCAL" | "OPEN_AI" | "GROQ";
+
 export type ServerConfig = {
   username: string | null;
-  name: string | null;
+  name: ServerMode | null;
   model_name: string | null;
   api_url: string | null;
 };
 
 export type ServerPayload = {
   username: string;
-  name: string;
+  name: ServerMode;
   model_name: string;
   api_url: string;
   api_key: string;

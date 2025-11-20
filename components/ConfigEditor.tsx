@@ -19,7 +19,7 @@ import type { ServerConfig, ServerPayload } from "@/app/api/wrappers";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser } from "@fortawesome/free-solid-svg-icons";
 
-type Mode = "lite" | "heavy";
+type Mode = "openai" | "groq" | "local";
 
 type ConfigEditorProps = {
   isOpen: boolean;
@@ -41,12 +41,14 @@ const MODEL_OPTIONS = [
   { label: "직접 입력", value: CUSTOM_MODEL_KEY },
 ];
 
-const inferMode = (modelName: string, apiUrl: string): Mode => {
-  if (modelName === "gpt-5-nano" && apiUrl === DEFAULT_OPENAI_URL) {
-    return "lite";
-  }
-  return "heavy";
+const inferModeFromConfig = (cfg: ServerConfig): Mode => {
+  if (cfg.name === "OPEN_AI") return "openai";
+  if (cfg.name === "GROQ") return "groq";
+  // 과거 데이터("NO_OP" 또는 undefined)가 남아있을 경우를 대비:
+  if (!cfg.name && cfg.api_url === DEFAULT_OPENAI_URL) return "openai";
+  return "local";
 };
+
 
 const emptyError: string[] = [];
 
@@ -70,7 +72,7 @@ export default function ConfigEditor({
     useFormInput<string>(defaultConfig.api_url || DEFAULT_OPENAI_URL);
   const [apiKey, setApiKey, apiKeyErrors, setApiKeyErrors] =
     useFormInput<string>("");
-  const [mode, setMode] = useState<Mode>("lite");
+  const [mode, setMode] = useState<Mode>("openai");
 
   const { theme, setTheme, resolvedTheme } = useTheme();
   const isSSR = useIsSSR();
@@ -85,18 +87,22 @@ export default function ConfigEditor({
         ? (defaultConfig.model_name as string)
         : CUSTOM_MODEL_KEY
     );
+    setMode(inferModeFromConfig(defaultConfig))
   }, [defaultConfig]);
 
   const handleModeChange = useCallback(
     (nextMode: Mode) => {
-      if (nextMode === "lite") {
+      if (nextMode === "openai") {
         setApiUrl(DEFAULT_OPENAI_URL);
         setModelName("gpt-5-nano");
         setModelSelect("gpt-5-nano");
         setApiKey("");
+      } else if (nextMode === "groq") {
+        setApiUrl("http://api.groq.com");
+        setModelName("meta-llama/llama-4-scout-17b-16e-instruct");
+        setApiKey("");
       } else {
-        // setModelName("gpt-5-nano");
-        setApiUrl("");
+        setApiUrl("http://host.docker.internal:8080/v1");
         setApiKey("");
       }
       setMode(nextMode);
@@ -128,7 +134,7 @@ export default function ConfigEditor({
       hasError = true;
       setApiUrlErrors(["API URL cannot be empty."]);
     }
-    if (mode === "lite" && !trimmedKey) {
+    if ((mode === "openai" || mode === "groq") && !trimmedKey) {
       hasError = true;
       setApiKeyErrors(["API key is required."]);
     }
@@ -164,10 +170,13 @@ export default function ConfigEditor({
       return Promise.resolve(null);
     }
 
+    const backendName: ServerPayload["name"] =
+      mode === "openai" ? "OPEN_AI" : mode === "groq" ? "GROQ" : "LOCAL";
+
     return Promise.resolve(
       setConfig({
         username: trimmedUsername,
-        name: "NO_OP",
+        name: backendName,
         model_name: trimmedModelName,
         api_url: trimmedApiUrl,
         api_key: trimmedKey,
@@ -180,7 +189,8 @@ export default function ConfigEditor({
 
   const handleModeSelection = useCallback(
     (key: Key) => {
-      handleModeChange(key === "lite" ? "lite" : "heavy");
+      const nextMode = key as Mode;
+      handleModeChange(nextMode);
     },
     [handleModeChange]
   );
@@ -221,15 +231,13 @@ export default function ConfigEditor({
                     tab: "h-8 px-3 data-[selected=true]:bg-primary data-[selected=true]:text-primary-foreground",
                   }}
                 >
-                  <Tab key="lite" title="라이트" />
-                  <Tab key="heavy" title="헤비" />
+                  <Tab key="openai" title="OpenAI" />
+                  <Tab key="groq" title="Groq" />
+                  <Tab key="local" title="로컬" />
                 </Tabs>
               </div>
 
-              <div
-                className="aria-hidden:hidden"
-                aria-hidden={false}
-              >
+              <div className="aria-hidden:hidden" aria-hidden={false}>
                 <Select
                   label={<p>모델 종류</p>}
                   selectedKeys={[modelSelect]} // ★변경
@@ -261,7 +269,7 @@ export default function ConfigEditor({
                   <Input
                     className="mt-2"
                     label="모델명 직접 입력"
-                    placeholder="예: llama-3.1-8b-instant (Groq)"
+                    placeholder="예: meta-llama/llama-4-scout-17b-16e-instruct (Groq)"
                     value={modelName}
                     isInvalid={modelErrors.length > 0}
                     errorMessage={modelErrors.join(" ")}
