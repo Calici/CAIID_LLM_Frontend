@@ -34,12 +34,16 @@ export type ToolCallT = {
   tool_call_id: string;
   is_complete: boolean;
 };
-
+export type ErrorMessageT = {
+  type: "error";
+  content: string;
+  detail?: string;
+}
 /* This defines the messages that the model will send. I.e. returned from the SSE event */
 export type ModelResponseT = ModelMessageT | ToolCallT;
 
 /* This defines the whole structure */
-export type MessageT = UserMessageT | ModelMessageT | ToolCallT;
+export type MessageT = UserMessageT | ModelMessageT | ToolCallT | ErrorMessageT;
 export type HistoryT = MessageT[];
 
 /* Workspace State */

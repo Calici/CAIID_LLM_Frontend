@@ -121,10 +121,9 @@ function useWorkspace(
             setMessages((prev) => [
               ...prev,
               {
-                type: "ai",
+                type: "error",
                 content: "메시지 생성에 실패했습니다",
-                is_error: true,
-                error_detail: msg,
+                detail: String(msg),
               },
             ]);
           },
