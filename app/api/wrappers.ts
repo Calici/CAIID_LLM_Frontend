@@ -24,6 +24,8 @@ export type UserMessageT = {
 export type ModelMessageT = {
   type: "ai";
   content: string;
+  is_error?: boolean;
+  error_detail?: string; // optional fieldsfor error cases 
 };
 export type ToolCallT = {
   type: "tool_call";

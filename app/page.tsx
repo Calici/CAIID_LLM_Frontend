@@ -122,8 +122,9 @@ function useWorkspace(
               ...prev,
               {
                 type: "ai",
-                content: `메시지 생성에 실패했습니다 : ${msg}`,
-                is_complete: true,
+                content: "메시지 생성에 실패했습니다",
+                is_error: true,
+                error_detail: msg,
               },
             ]);
           },
