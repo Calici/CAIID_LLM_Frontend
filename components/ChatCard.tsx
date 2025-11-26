@@ -9,6 +9,7 @@ import {
   faUser,
   faChevronRight,
   faChevronDown,
+  faExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import { Spinner } from "@heroui/spinner";
 import Markdown from "react-markdown";
@@ -73,47 +74,60 @@ export default function ChatCard({
           </div>
           <p>Yuna</p>
         </div>
-        <Card
-          className={
-            "px-3 py-2 bg-content2 text-foreground" +
-            (isError ? "border bodrer-danger-400" : "")
-          }
-          shadow="none"
-          radius="sm"
-        >
-          <div className="flex items-start gap-x-2">
-            {hasDetail && (
-              <button
-                type="button"
-                className="mt-1 flex-shrink-0"
-                onClick={() => setShowErrorDetail((prev) => !prev)}
-                aria-label={
-                  showErrorDetail ? "에러 상세 접기" : "에러 상세 펼치기"
-                }
-              >
-                <FontAwesomeIcon
-                  icon={showErrorDetail ? faChevronDown : faChevronRight}
-                  className="text-default-500 text-xs"
-                />
-              </button>
+        <div className="flex flex-row gap-x-3">
+          <div className="mt-1 flex-shrink-0">
+            {isError ? (
+              <div className="w-6 h-6 bg-warning-300 text-black flex items-center justify-center rounded-full">
+                <FontAwesomeIcon icon={faExclamation} />
+              </div>
+            ) : (
+              <div className="w-6 h-6 bg-success-400 text-white flex items-center justify-center rounded-full">
+                <FontAwesomeIcon icon={faCheck} />
+              </div>
             )}
-            <div className="flex-1">
-              <Markdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight]}
-              >
-                {m.content}
-              </Markdown>
-              {hasDetail && showErrorDetail && (
-                <div className="mt-2 rounded-md bg-content1/80 text-xs text-default-500 p-2">
-                  <pre className="whitespace-pre-wrap break-all">
-                    {errorDetail}
-                  </pre>
-                </div>
-              )}
-            </div>
           </div>
-        </Card>
+          <Card
+            className={
+              "px-3 py-2 bg-content2 text-foreground" +
+              (isError ? "border bodrer-danger-400" : "")
+            }
+            shadow="none"
+            radius="sm"
+          >
+            <div className="flex items-start gap-x-2">
+              {hasDetail && (
+                <button
+                  type="button"
+                  className="mt-1 flex-shrink-0"
+                  onClick={() => setShowErrorDetail((prev) => !prev)}
+                  aria-label={
+                    showErrorDetail ? "에러 상세 접기" : "에러 상세 펼치기"
+                  }
+                >
+                  <FontAwesomeIcon
+                    icon={showErrorDetail ? faChevronDown : faChevronRight}
+                    className="text-default-500 text-xs"
+                  />
+                </button>
+              )}
+              <div className="flex-1">
+                <Markdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeHighlight]}
+                >
+                  {m.content}
+                </Markdown>
+                {hasDetail && showErrorDetail && (
+                  <div className="mt-2 rounded-md bg-content1/80 text-xs text-default-500 p-2">
+                    <pre className="whitespace-pre-wrap break-all">
+                      {errorDetail}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
     );
   } else {
