@@ -39,6 +39,9 @@ type ChatT =
   | {
       type: "query";
       content: PublicationT[];
+    } | {
+      type: "error",
+      content: string
     };
 
 export function parseToJSON(v: string): ChatT {
@@ -50,7 +53,8 @@ type Handlers = {
   onRecord: (name: string, uuid: string) => void;
   onQuery: (v: PublicationT[]) => void;
   onEnd?: () => void;
-  onError?: (status: number, err?: any) => void;
+  onError?: (status: number, err?: any) => void; // HTTP or Network Error 
+  onStreamError?: (msg: string) => void; // type:"error"
 };
 
 export function postChatStream(payload: ChatPayload, handlers: Handlers) {
@@ -76,6 +80,8 @@ export function postChatStream(payload: ChatPayload, handlers: Handlers) {
             handlers.onRecord(element.content.name, element.content.uuid);
           } else if (element.type === "query") {
             handlers.onQuery(element.content);
+          } else if (element.type === "error") {
+            handlers.onStreamError?.(element.content);
           }
         });
       }

@@ -116,7 +116,17 @@ function useWorkspace(
           onQuery: (v) => {
             setQueries(v);
           },
-          onError: (status) => handleHttpError({status}),
+          onError: (status) => handleHttpError({ status }),
+          onStreamError: (msg) => {
+            setMessages((prev) => [
+              ...prev,
+              {
+                type: "ai",
+                content: `메시지 생성에 실패했습니다 : ${msg}`,
+                is_complete: true,
+              },
+            ]);
+          },
         }
       );
     },
