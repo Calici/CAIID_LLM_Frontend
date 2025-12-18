@@ -171,7 +171,7 @@ export default function ChatCard({
           </div>
           <p>Yuna</p>
         </div>
-        <div className="flex flex-row gap-x-2">
+        {/* <div className="flex flex-row gap-x-2">
           <Spinner
             aria-hidden={m.is_complete}
             className="aria-hidden:hidden"
@@ -184,7 +184,7 @@ export default function ChatCard({
             <FontAwesomeIcon icon={faCheck} />
           </div>
           <p>{m.tool_name}</p>
-        </div>
+        </div> Uncomment it for tool_call spinner and check icons */} 
       </div>
     );
   }
