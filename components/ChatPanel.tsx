@@ -160,7 +160,7 @@ function ChatArea({ value, setValue, send, isGenerating, uuid }: ChatAreaP) {
       className="flex-1"
       variant="bordered"
       onKeyDown={(e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
+        if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
           e.preventDefault();
           send();
         }
